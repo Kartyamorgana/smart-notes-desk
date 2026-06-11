@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Smart Notes Desk" },
+      { name: "description", content: "Study Buddy AI is an interactive web application for managing and enhancing study notes." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Smart Notes Desk" },
+      { property: "og:description", content: "Study Buddy AI is an interactive web application for managing and enhancing study notes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Smart Notes Desk" },
+      { name: "twitter:description", content: "Study Buddy AI is an interactive web application for managing and enhancing study notes." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/73cfa90d-08b4-4ff1-bdcb-9a3241e215d1/id-preview-0289f474--97d049ab-9fb6-4b24-8f05-547b7fba5bd5.lovable.app-1781160218385.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/73cfa90d-08b4-4ff1-bdcb-9a3241e215d1/id-preview-0289f474--97d049ab-9fb6-4b24-8f05-547b7fba5bd5.lovable.app-1781160218385.png" },
     ],
     links: [
       {
