@@ -690,11 +690,17 @@ function StudyNotesApp() {
               </div>
               <h2 className="text-xl font-semibold mb-2">Selamat datang di StudyNotes</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Buat catatan pertamamu untuk mulai belajar. Markdown, syntax highlighting, dan asisten AI sudah siap.
+                Mulai dari catatan kosong, atau unggah PPT, PDF, Word, atau rekaman audio — AI akan
+                menyusun catatan lengkap beserta kuis dan flashcard.
               </p>
-              <Button onClick={() => handleCreateNote(null)} className="gap-1">
-                <Plus className="w-4 h-4" /> Buat catatan baru
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button onClick={() => handleCreateNote(null)} className="gap-1">
+                  <Plus className="w-4 h-4" /> Buat catatan baru
+                </Button>
+                <Button variant="outline" onClick={() => setMaterialOpen(true)} className="gap-1">
+                  <FileUp className="w-4 h-4" /> Impor materi
+                </Button>
+              </div>
               <div className="mt-6 text-xs text-muted-foreground space-y-1">
                 <div>Pintasan: <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Ctrl+N</kbd> baru · <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Ctrl+S</kbd> simpan · <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Ctrl+F</kbd> cari</div>
               </div>
@@ -702,6 +708,19 @@ function StudyNotesApp() {
           </div>
         )}
       </main>
+
+      <MaterialImportDialog
+        open={materialOpen}
+        onOpenChange={setMaterialOpen}
+        activeContent={active?.content}
+        onCreated={createNoteFromMaterial}
+        onEnriched={(title, content) => {
+          updateActive({ title, content });
+          setView("preview");
+        }}
+      />
+
+
 
       {/* Folder dialog */}
       <Dialog open={!!folderDialog} onOpenChange={(o) => !o && setFolderDialog(null)}>
