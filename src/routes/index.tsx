@@ -89,7 +89,8 @@ function StudyNotesApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"edit" | "preview">("edit");
+  const [view, setView] = useState<"edit" | "preview" | "game">("edit");
+  const [materialOpen, setMaterialOpen] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const callAi = useServerFn(runNoteAi);
