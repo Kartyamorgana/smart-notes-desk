@@ -598,6 +598,14 @@ function StudyNotesApp() {
                   )}
                   Ringkas
                 </Button>
+                <Button
+                  size="sm"
+                  variant={view === "game" ? "default" : "secondary"}
+                  onClick={() => setView(view === "game" ? "edit" : "game")}
+                  className="h-8 text-xs gap-1"
+                >
+                  <Gamepad2 className="w-3.5 h-3.5" /> Latihan
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => handleTogglePin(active.id)} className="h-8 w-8 p-0" title="Pin">
                   <Pin className={`w-4 h-4 ${active.pinned ? "text-primary fill-primary" : ""}`} />
                 </Button>
