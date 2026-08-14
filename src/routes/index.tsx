@@ -632,7 +632,7 @@ function StudyNotesApp() {
           <>
             {/* Mobile tabs */}
             <div className="md:hidden border-b border-border bg-card/30">
-              <Tabs value={view} onValueChange={(v) => setView(v as "edit" | "preview")}>
+              <Tabs value={view} onValueChange={(v) => setView(v as "edit" | "preview" | "game")}>
                 <TabsList className="w-full rounded-none bg-transparent h-10">
                   <TabsTrigger value="edit" className="flex-1 gap-1">
                     <Pencil className="w-3.5 h-3.5" /> Edit
@@ -640,23 +640,35 @@ function StudyNotesApp() {
                   <TabsTrigger value="preview" className="flex-1 gap-1">
                     <Eye className="w-3.5 h-3.5" /> Preview
                   </TabsTrigger>
+                  <TabsTrigger value="game" className="flex-1 gap-1">
+                    <Gamepad2 className="w-3.5 h-3.5" /> Latihan
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
-            <div className="flex-1 flex min-h-0">
-              <div className={`${view === "edit" ? "flex" : "hidden"} md:flex flex-1 min-w-0 border-r border-border`}>
-                <MarkdownEditor
-                  value={active.content}
-                  onChange={(v) => updateActive({ content: v })}
-                  onSave={flushSave}
-                />
-              </div>
-              <div className={`${view === "preview" ? "flex" : "hidden"} md:flex flex-1 min-w-0 overflow-y-auto p-6 bg-background animate-fade-in`}>
+            {view === "game" ? (
+              <div className="flex-1 min-h-0 overflow-y-auto bg-background animate-fade-in">
                 <div className="max-w-3xl w-full mx-auto">
-                  <MarkdownPreview source={active.content} />
+                  <StudyGamePanel content={active.content} noteId={active.id} />
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex-1 flex min-h-0">
+                <div className={`${view === "edit" ? "flex" : "hidden"} md:flex flex-1 min-w-0 border-r border-border`}>
+                  <MarkdownEditor
+                    value={active.content}
+                    onChange={(v) => updateActive({ content: v })}
+                    onSave={flushSave}
+                  />
+                </div>
+                <div className={`${view === "preview" ? "flex" : "hidden"} md:flex flex-1 min-w-0 overflow-y-auto p-6 bg-background animate-fade-in`}>
+                  <div className="max-w-3xl w-full mx-auto">
+                    <MarkdownPreview source={active.content} />
+                  </div>
+                </div>
+              </div>
+            )}
+
 
             {/* Mobile AI buttons */}
             <div className="md:hidden border-t border-border p-2 flex gap-2 bg-card/50">
