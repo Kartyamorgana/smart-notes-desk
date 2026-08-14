@@ -478,6 +478,14 @@ function StudyNotesApp() {
               <FolderPlus className="w-3.5 h-3.5" /> Folder
             </Button>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMaterialOpen(true)}
+            className="w-full h-8 text-xs gap-1 mt-1.5"
+          >
+            <FileUp className="w-3.5 h-3.5" /> Dari PPT / PDF / Audio
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-2">
