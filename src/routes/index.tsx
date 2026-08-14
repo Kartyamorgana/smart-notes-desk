@@ -61,6 +61,8 @@ import { FolderTree } from "@/components/studynotes/FolderTree";
 import { MarkdownEditor } from "@/components/studynotes/MarkdownEditor";
 import { MarkdownPreview } from "@/components/studynotes/MarkdownPreview";
 import { runNoteAi } from "@/lib/ai.functions";
+import { MaterialImportDialog } from "@/components/studynotes/MaterialImportDialog";
+import { StudyGamePanel } from "@/components/studynotes/StudyGamePanel";
 
 export const Route = createFileRoute("/")({
   ssr: false,
