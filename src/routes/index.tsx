@@ -174,6 +174,21 @@ function StudyNotesApp() {
     }
   };
 
+  const createNoteFromMaterial = async (title: string, content: string) => {
+    try {
+      const n = await dbCreateNote(active?.folder_id ?? null);
+      await dbUpdateNote(n.id, { title, content });
+      const full = { ...n, title, content };
+      setNotes((p) => [full, ...p]);
+      setActiveId(n.id);
+      setView("preview");
+    } catch (e) {
+      toast.error("Gagal menyimpan catatan", { description: (e as Error).message });
+    }
+  };
+
+
+
   const [confirmDelete, setConfirmDelete] = useState<
     | { kind: "note"; id: string }
     | { kind: "folder"; id: string }
