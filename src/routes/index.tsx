@@ -21,6 +21,8 @@ import {
   X,
   Eye,
   Pencil,
+  FileUp,
+  Gamepad2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -61,6 +63,8 @@ import { FolderTree } from "@/components/studynotes/FolderTree";
 import { MarkdownEditor } from "@/components/studynotes/MarkdownEditor";
 import { MarkdownPreview } from "@/components/studynotes/MarkdownPreview";
 import { runNoteAi } from "@/lib/ai.functions";
+import { MaterialImportDialog } from "@/components/studynotes/MaterialImportDialog";
+import { StudyGamePanel } from "@/components/studynotes/StudyGamePanel";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -87,7 +91,8 @@ function StudyNotesApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"edit" | "preview">("edit");
+  const [view, setView] = useState<"edit" | "preview" | "game">("edit");
+  const [materialOpen, setMaterialOpen] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const callAi = useServerFn(runNoteAi);
@@ -168,6 +173,21 @@ function StudyNotesApp() {
       toast.error("Gagal membuat catatan", { description: (e as Error).message });
     }
   };
+
+  const createNoteFromMaterial = async (title: string, content: string) => {
+    try {
+      const n = await dbCreateNote(active?.folder_id ?? null);
+      await dbUpdateNote(n.id, { title, content });
+      const full = { ...n, title, content };
+      setNotes((p) => [full, ...p]);
+      setActiveId(n.id);
+      setView("preview");
+    } catch (e) {
+      toast.error("Gagal menyimpan catatan", { description: (e as Error).message });
+    }
+  };
+
+
 
   const [confirmDelete, setConfirmDelete] = useState<
     | { kind: "note"; id: string }
@@ -458,6 +478,14 @@ function StudyNotesApp() {
               <FolderPlus className="w-3.5 h-3.5" /> Folder
             </Button>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMaterialOpen(true)}
+            className="w-full h-8 text-xs gap-1 mt-1.5"
+          >
+            <FileUp className="w-3.5 h-3.5" /> Dari PPT / PDF / Audio
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -570,6 +598,14 @@ function StudyNotesApp() {
                   )}
                   Ringkas
                 </Button>
+                <Button
+                  size="sm"
+                  variant={view === "game" ? "default" : "secondary"}
+                  onClick={() => setView(view === "game" ? "edit" : "game")}
+                  className="h-8 text-xs gap-1"
+                >
+                  <Gamepad2 className="w-3.5 h-3.5" /> Latihan
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => handleTogglePin(active.id)} className="h-8 w-8 p-0" title="Pin">
                   <Pin className={`w-4 h-4 ${active.pinned ? "text-primary fill-primary" : ""}`} />
                 </Button>
@@ -596,7 +632,7 @@ function StudyNotesApp() {
           <>
             {/* Mobile tabs */}
             <div className="md:hidden border-b border-border bg-card/30">
-              <Tabs value={view} onValueChange={(v) => setView(v as "edit" | "preview")}>
+              <Tabs value={view} onValueChange={(v) => setView(v as "edit" | "preview" | "game")}>
                 <TabsList className="w-full rounded-none bg-transparent h-10">
                   <TabsTrigger value="edit" className="flex-1 gap-1">
                     <Pencil className="w-3.5 h-3.5" /> Edit
@@ -604,23 +640,35 @@ function StudyNotesApp() {
                   <TabsTrigger value="preview" className="flex-1 gap-1">
                     <Eye className="w-3.5 h-3.5" /> Preview
                   </TabsTrigger>
+                  <TabsTrigger value="game" className="flex-1 gap-1">
+                    <Gamepad2 className="w-3.5 h-3.5" /> Latihan
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
-            <div className="flex-1 flex min-h-0">
-              <div className={`${view === "edit" ? "flex" : "hidden"} md:flex flex-1 min-w-0 border-r border-border`}>
-                <MarkdownEditor
-                  value={active.content}
-                  onChange={(v) => updateActive({ content: v })}
-                  onSave={flushSave}
-                />
-              </div>
-              <div className={`${view === "preview" ? "flex" : "hidden"} md:flex flex-1 min-w-0 overflow-y-auto p-6 bg-background animate-fade-in`}>
+            {view === "game" ? (
+              <div className="flex-1 min-h-0 overflow-y-auto bg-background animate-fade-in">
                 <div className="max-w-3xl w-full mx-auto">
-                  <MarkdownPreview source={active.content} />
+                  <StudyGamePanel content={active.content} noteId={active.id} />
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex-1 flex min-h-0">
+                <div className={`${view === "edit" ? "flex" : "hidden"} md:flex flex-1 min-w-0 border-r border-border`}>
+                  <MarkdownEditor
+                    value={active.content}
+                    onChange={(v) => updateActive({ content: v })}
+                    onSave={flushSave}
+                  />
+                </div>
+                <div className={`${view === "preview" ? "flex" : "hidden"} md:flex flex-1 min-w-0 overflow-y-auto p-6 bg-background animate-fade-in`}>
+                  <div className="max-w-3xl w-full mx-auto">
+                    <MarkdownPreview source={active.content} />
+                  </div>
+                </div>
+              </div>
+            )}
+
 
             {/* Mobile AI buttons */}
             <div className="md:hidden border-t border-border p-2 flex gap-2 bg-card/50">
@@ -642,11 +690,17 @@ function StudyNotesApp() {
               </div>
               <h2 className="text-xl font-semibold mb-2">Selamat datang di StudyNotes</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Buat catatan pertamamu untuk mulai belajar. Markdown, syntax highlighting, dan asisten AI sudah siap.
+                Mulai dari catatan kosong, atau unggah PPT, PDF, Word, atau rekaman audio — AI akan
+                menyusun catatan lengkap beserta kuis dan flashcard.
               </p>
-              <Button onClick={() => handleCreateNote(null)} className="gap-1">
-                <Plus className="w-4 h-4" /> Buat catatan baru
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button onClick={() => handleCreateNote(null)} className="gap-1">
+                  <Plus className="w-4 h-4" /> Buat catatan baru
+                </Button>
+                <Button variant="outline" onClick={() => setMaterialOpen(true)} className="gap-1">
+                  <FileUp className="w-4 h-4" /> Impor materi
+                </Button>
+              </div>
               <div className="mt-6 text-xs text-muted-foreground space-y-1">
                 <div>Pintasan: <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Ctrl+N</kbd> baru · <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Ctrl+S</kbd> simpan · <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">Ctrl+F</kbd> cari</div>
               </div>
@@ -654,6 +708,19 @@ function StudyNotesApp() {
           </div>
         )}
       </main>
+
+      <MaterialImportDialog
+        open={materialOpen}
+        onOpenChange={setMaterialOpen}
+        activeContent={active?.content}
+        onCreated={createNoteFromMaterial}
+        onEnriched={(title, content) => {
+          updateActive({ title, content });
+          setView("preview");
+        }}
+      />
+
+
 
       {/* Folder dialog */}
       <Dialog open={!!folderDialog} onOpenChange={(o) => !o && setFolderDialog(null)}>
