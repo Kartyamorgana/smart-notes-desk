@@ -17,7 +17,9 @@ import {
   detectKind,
   extractOfficeText,
   fileToBase64,
+  formatBytes,
   kindLabel,
+  limitFor,
   type MaterialKind,
 } from "@/lib/material";
 import { generateNoteFromMaterial, transcribeAudio } from "@/lib/ingest.functions";
