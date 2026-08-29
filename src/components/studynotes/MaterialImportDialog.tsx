@@ -17,7 +17,9 @@ import {
   detectKind,
   extractOfficeText,
   fileToBase64,
+  formatBytes,
   kindLabel,
+  limitFor,
   type MaterialKind,
 } from "@/lib/material";
 import { generateNoteFromMaterial, transcribeAudio } from "@/lib/ingest.functions";
@@ -49,14 +51,17 @@ export function MaterialImportDialog({
 
   const pick = (f: File | undefined) => {
     if (!f) return;
-    if (f.size > MAX_MATERIAL_BYTES) {
-      toast.error("File terlalu besar", { description: "Maksimal 20 MB." });
-      return;
-    }
     const k = detectKind(f);
     if (k === "unsupported") {
       toast.error("Format belum didukung", {
         description: "Gunakan PPTX, DOCX, XLSX, PDF, audio (mp3/wav/m4a), atau teks.",
+      });
+      return;
+    }
+    const max = Math.min(limitFor(k), MAX_MATERIAL_BYTES);
+    if (f.size > max) {
+      toast.error("File terlalu besar", {
+        description: `Maksimal ${formatBytes(max)} untuk ${kindLabel(k).toLowerCase()}.`,
       });
       return;
     }
@@ -175,7 +180,7 @@ export function MaterialImportDialog({
               </div>
               <div className="text-sm">Klik atau tarik berkas ke sini</div>
               <div className="text-xs text-muted-foreground">
-                PPTX · DOCX · XLSX · PDF · MP3/WAV/M4A · TXT/MD (maks 20 MB)
+                PPTX · DOCX · XLSX · TXT/MD hingga 1 GB · Audio hingga 200 MB · PDF hingga 100 MB
               </div>
             </div>
           )}

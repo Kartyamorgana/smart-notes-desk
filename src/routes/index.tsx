@@ -23,6 +23,8 @@ import {
   Pencil,
   FileUp,
   Gamepad2,
+  Brain,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -65,6 +67,10 @@ import { MarkdownPreview } from "@/components/studynotes/MarkdownPreview";
 import { runNoteAi } from "@/lib/ai.functions";
 import { MaterialImportDialog } from "@/components/studynotes/MaterialImportDialog";
 import { StudyGamePanel } from "@/components/studynotes/StudyGamePanel";
+import { StudyMethodsPanel } from "@/components/studynotes/StudyMethodsPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+type View = "edit" | "preview" | "game" | "methods";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -89,9 +95,10 @@ function StudyNotesApp() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"edit" | "preview" | "game">("edit");
+  const [view, setView] = useState<View>("edit");
   const [materialOpen, setMaterialOpen] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -406,12 +413,33 @@ function StudyNotesApp() {
   }, [flushSave]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground">
+      <a
+        href="#note-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-primary focus:text-primary-foreground focus:px-3 focus:py-1.5 focus:rounded-md focus:text-sm"
+      >
+        Lompat ke isi catatan
+      </a>
+
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+          className="md:hidden fixed inset-0 z-30 bg-foreground/40 backdrop-blur-sm animate-fade-in"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? "w-72 md:w-80" : "w-0"
-        } shrink-0 transition-[width] duration-200 overflow-hidden bg-sidebar border-r border-sidebar-border flex flex-col`}
+        id="sidebar"
+        aria-label="Daftar catatan dan folder"
+        aria-hidden={!sidebarOpen}
+        className={`fixed md:static inset-y-0 left-0 z-40 h-full w-[86vw] max-w-xs md:max-w-none shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform md:transition-[width] duration-200 ease-out ${
+          sidebarOpen
+            ? "translate-x-0 md:w-80"
+            : "-translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden md:border-r-0"
+        }`}
       >
         <div className="p-3 border-b border-sidebar-border">
           <div className="flex items-center gap-2 mb-3">
