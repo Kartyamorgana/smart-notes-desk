@@ -94,6 +94,7 @@ function StudyNotesApp() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("edit");
