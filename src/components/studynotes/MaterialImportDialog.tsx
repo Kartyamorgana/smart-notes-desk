@@ -180,7 +180,7 @@ export function MaterialImportDialog({
               </div>
               <div className="text-sm">Klik atau tarik berkas ke sini</div>
               <div className="text-xs text-muted-foreground">
-                PPTX · DOCX · XLSX · PDF · MP3/WAV/M4A · TXT/MD (maks 20 MB)
+                PPTX · DOCX · XLSX · TXT/MD hingga 1 GB · Audio hingga 200 MB · PDF hingga 100 MB
               </div>
             </div>
           )}
