@@ -23,6 +23,8 @@ import {
   Pencil,
   FileUp,
   Gamepad2,
+  Brain,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -65,6 +67,9 @@ import { MarkdownPreview } from "@/components/studynotes/MarkdownPreview";
 import { runNoteAi } from "@/lib/ai.functions";
 import { MaterialImportDialog } from "@/components/studynotes/MaterialImportDialog";
 import { StudyGamePanel } from "@/components/studynotes/StudyGamePanel";
+import { StudyMethodsPanel } from "@/components/studynotes/StudyMethodsPanel";
+
+type View = "edit" | "preview" | "game" | "methods";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -91,7 +96,7 @@ function StudyNotesApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"edit" | "preview" | "game">("edit");
+  const [view, setView] = useState<View>("edit");
   const [materialOpen, setMaterialOpen] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
