@@ -68,6 +68,7 @@ import { runNoteAi } from "@/lib/ai.functions";
 import { MaterialImportDialog } from "@/components/studynotes/MaterialImportDialog";
 import { StudyGamePanel } from "@/components/studynotes/StudyGamePanel";
 import { StudyMethodsPanel } from "@/components/studynotes/StudyMethodsPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type View = "edit" | "preview" | "game" | "methods";
 
