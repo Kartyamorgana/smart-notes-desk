@@ -49,14 +49,17 @@ export function MaterialImportDialog({
 
   const pick = (f: File | undefined) => {
     if (!f) return;
-    if (f.size > MAX_MATERIAL_BYTES) {
-      toast.error("File terlalu besar", { description: "Maksimal 20 MB." });
-      return;
-    }
     const k = detectKind(f);
     if (k === "unsupported") {
       toast.error("Format belum didukung", {
         description: "Gunakan PPTX, DOCX, XLSX, PDF, audio (mp3/wav/m4a), atau teks.",
+      });
+      return;
+    }
+    const max = Math.min(limitFor(k), MAX_MATERIAL_BYTES);
+    if (f.size > max) {
+      toast.error("File terlalu besar", {
+        description: `Maksimal ${formatBytes(max)} untuk ${kindLabel(k).toLowerCase()}.`,
       });
       return;
     }
