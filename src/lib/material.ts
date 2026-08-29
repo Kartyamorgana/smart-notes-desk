@@ -5,7 +5,32 @@ export type MaterialKind = "pptx" | "docx" | "xlsx" | "pdf" | "audio" | "text" |
 export const ACCEPTED_MATERIAL =
   ".pptx,.docx,.xlsx,.pdf,.txt,.md,.markdown,.csv,.json,.mp3,.wav,.m4a,.webm,.ogg,.aac,.flac,.mp4";
 
-export const MAX_MATERIAL_BYTES = 20 * 1024 * 1024;
+/** Absolute ceiling for any upload (1 GB). */
+export const MAX_MATERIAL_BYTES = 1024 * 1024 * 1024;
+
+/**
+ * Per-kind limits. Files parsed locally in the browser (Office/teks) bisa sangat besar.
+ * Audio & PDF harus dikirim ke AI, jadi batasnya lebih kecil agar tidak gagal di jaringan.
+ */
+export const KIND_LIMITS: Record<MaterialKind, number> = {
+  pptx: 1024 * 1024 * 1024,
+  docx: 1024 * 1024 * 1024,
+  xlsx: 1024 * 1024 * 1024,
+  text: 1024 * 1024 * 1024,
+  pdf: 100 * 1024 * 1024,
+  audio: 200 * 1024 * 1024,
+  unsupported: 0,
+};
+
+export function limitFor(kind: MaterialKind) {
+  return KIND_LIMITS[kind] ?? MAX_MATERIAL_BYTES;
+}
+
+export function formatBytes(n: number) {
+  if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(n % 1024 ** 3 === 0 ? 0 : 1)} GB`;
+  if (n >= 1024 ** 2) return `${Math.round(n / 1024 ** 2)} MB`;
+  return `${Math.round(n / 1024)} KB`;
+}
 
 export function detectKind(file: File): MaterialKind {
   const name = file.name.toLowerCase();
