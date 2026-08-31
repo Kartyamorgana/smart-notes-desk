@@ -13,7 +13,27 @@ const MaterialInput = z.object({
   pdfBase64: z.string().optional(),
   pdfMime: z.string().optional(),
   existingContent: z.string().max(60000).optional(),
-  depth: z.enum(["standard", "deep"]).default("standard"),
+  depth: z.enum(["standard", "deep", "ultra", "mega"]).default("standard"),
+});
+
+const OutlineInput = z.object({
+  filename: z.string().min(1),
+  material: z.string().max(200000).optional(),
+  pdfBase64: z.string().optional(),
+  pdfMime: z.string().optional(),
+  existingContent: z.string().max(60000).optional(),
+  sectionCount: z.number().int().min(3).max(40).default(12),
+});
+
+const ExpandInput = z.object({
+  title: z.string().min(1),
+  digest: z.string().max(120000),
+  heading: z.string().min(1),
+  points: z.array(z.string()).default([]),
+  outlineHeadings: z.array(z.string()).default([]),
+  targetWords: z.number().int().min(300).max(4000).default(1200),
+  index: z.number().int().min(0).default(0),
+  total: z.number().int().min(1).default(1),
 });
 
 const GameInput = z.object({
