@@ -48,7 +48,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   fetchAll,
   createNote as dbCreateNote,
@@ -96,6 +103,11 @@ function StudyNotesApp() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
+
+  // Sidebar tertutup secara default di layar kecil
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile]);
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("edit");
@@ -476,6 +488,7 @@ function StudyNotesApp() {
                       setActiveId(n.id);
                       setSearch("");
                       setView("edit");
+                      if (isMobile) setSidebarOpen(false);
                     }}
                     className="w-full text-left px-3 py-2 hover:bg-accent text-sm border-b border-border last:border-b-0"
                   >
@@ -527,6 +540,7 @@ function StudyNotesApp() {
               onSelectNote={(id) => {
                 setActiveId(id);
                 setView("edit");
+                if (isMobile) setSidebarOpen(false);
               }}
               onCreateNote={handleCreateNote}
               onDeleteNote={(id) => setConfirmDelete({ kind: "note", id })}
@@ -569,7 +583,7 @@ function StudyNotesApp() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main id="note-content" className="flex-1 flex flex-col min-w-0">
         <header className="h-12 shrink-0 border-b border-border flex items-center gap-2 px-3 bg-card/50 backdrop-blur">
           <button
             onClick={() => setSidebarOpen((v) => !v)}
@@ -634,6 +648,14 @@ function StudyNotesApp() {
                 >
                   <Gamepad2 className="w-3.5 h-3.5" /> Latihan
                 </Button>
+                <Button
+                  size="sm"
+                  variant={view === "methods" ? "default" : "secondary"}
+                  onClick={() => setView(view === "methods" ? "edit" : "methods")}
+                  className="h-8 text-xs gap-1"
+                >
+                  <Brain className="w-3.5 h-3.5" /> Metode
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => handleTogglePin(active.id)} className="h-8 w-8 p-0" title="Pin">
                   <Pin className={`w-4 h-4 ${active.pinned ? "text-primary fill-primary" : ""}`} />
                 </Button>
@@ -650,6 +672,33 @@ function StudyNotesApp() {
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
+
+              {/* Mobile overflow menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" className="md:hidden h-8 w-8 p-0" aria-label="Aksi catatan">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleTogglePin(active.id)}>
+                    <Pin className="w-4 h-4 mr-2" /> {active.pinned ? "Lepas pin" : "Pin catatan"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportActiveMd}>
+                    <FileDown className="w-4 h-4 mr-2" /> Unduh .md
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMaterialOpen(true)}>
+                    <FileUp className="w-4 h-4 mr-2" /> Impor materi
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setConfirmDelete({ kind: "note", id: active.id })}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Hapus catatan
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <div className="text-sm text-muted-foreground">Tidak ada catatan dipilih</div>
@@ -659,17 +708,20 @@ function StudyNotesApp() {
         {active ? (
           <>
             {/* Mobile tabs */}
-            <div className="md:hidden border-b border-border bg-card/30">
-              <Tabs value={view} onValueChange={(v) => setView(v as "edit" | "preview" | "game")}>
-                <TabsList className="w-full rounded-none bg-transparent h-10">
-                  <TabsTrigger value="edit" className="flex-1 gap-1">
+            <div className="md:hidden border-b border-border bg-card/30 overflow-x-auto">
+              <Tabs value={view} onValueChange={(v) => setView(v as View)}>
+                <TabsList className="w-full min-w-max rounded-none bg-transparent h-10">
+                  <TabsTrigger value="edit" className="flex-1 gap-1 text-xs">
                     <Pencil className="w-3.5 h-3.5" /> Edit
                   </TabsTrigger>
-                  <TabsTrigger value="preview" className="flex-1 gap-1">
+                  <TabsTrigger value="preview" className="flex-1 gap-1 text-xs">
                     <Eye className="w-3.5 h-3.5" /> Preview
                   </TabsTrigger>
-                  <TabsTrigger value="game" className="flex-1 gap-1">
+                  <TabsTrigger value="game" className="flex-1 gap-1 text-xs">
                     <Gamepad2 className="w-3.5 h-3.5" /> Latihan
+                  </TabsTrigger>
+                  <TabsTrigger value="methods" className="flex-1 gap-1 text-xs">
+                    <Brain className="w-3.5 h-3.5" /> Metode
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -678,6 +730,16 @@ function StudyNotesApp() {
               <div className="flex-1 min-h-0 overflow-y-auto bg-background animate-fade-in">
                 <div className="max-w-3xl w-full mx-auto">
                   <StudyGamePanel content={active.content} noteId={active.id} />
+                </div>
+              </div>
+            ) : view === "methods" ? (
+              <div className="flex-1 min-h-0 overflow-y-auto bg-background animate-fade-in">
+                <div className="max-w-3xl w-full mx-auto">
+                  <StudyMethodsPanel
+                    content={active.content}
+                    noteId={active.id}
+                    onAppend={(md) => updateActive({ content: active.content + md })}
+                  />
                 </div>
               </div>
             ) : (
