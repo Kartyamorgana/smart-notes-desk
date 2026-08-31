@@ -634,6 +634,14 @@ function StudyNotesApp() {
                 >
                   <Gamepad2 className="w-3.5 h-3.5" /> Latihan
                 </Button>
+                <Button
+                  size="sm"
+                  variant={view === "methods" ? "default" : "secondary"}
+                  onClick={() => setView(view === "methods" ? "edit" : "methods")}
+                  className="h-8 text-xs gap-1"
+                >
+                  <Brain className="w-3.5 h-3.5" /> Metode
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => handleTogglePin(active.id)} className="h-8 w-8 p-0" title="Pin">
                   <Pin className={`w-4 h-4 ${active.pinned ? "text-primary fill-primary" : ""}`} />
                 </Button>
@@ -650,6 +658,33 @@ function StudyNotesApp() {
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
+
+              {/* Mobile overflow menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" className="md:hidden h-8 w-8 p-0" aria-label="Aksi catatan">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleTogglePin(active.id)}>
+                    <Pin className="w-4 h-4 mr-2" /> {active.pinned ? "Lepas pin" : "Pin catatan"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportActiveMd}>
+                    <FileDown className="w-4 h-4 mr-2" /> Unduh .md
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMaterialOpen(true)}>
+                    <FileUp className="w-4 h-4 mr-2" /> Impor materi
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setConfirmDelete({ kind: "note", id: active.id })}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Hapus catatan
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <div className="text-sm text-muted-foreground">Tidak ada catatan dipilih</div>
