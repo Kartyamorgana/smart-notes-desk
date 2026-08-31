@@ -680,6 +680,16 @@ function StudyNotesApp() {
                   <StudyGamePanel content={active.content} noteId={active.id} />
                 </div>
               </div>
+            ) : view === "methods" ? (
+              <div className="flex-1 min-h-0 overflow-y-auto bg-background animate-fade-in">
+                <div className="max-w-3xl w-full mx-auto">
+                  <StudyMethodsPanel
+                    content={active.content}
+                    noteId={active.id}
+                    onAppend={(md) => updateActive({ content: active.content + md })}
+                  />
+                </div>
+              </div>
             ) : (
               <div className="flex-1 flex min-h-0">
                 <div className={`${view === "edit" ? "flex" : "hidden"} md:flex flex-1 min-w-0 border-r border-border`}>
