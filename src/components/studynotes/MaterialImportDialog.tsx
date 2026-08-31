@@ -22,7 +22,25 @@ import {
   limitFor,
   type MaterialKind,
 } from "@/lib/material";
-import { generateNoteFromMaterial, transcribeAudio } from "@/lib/ingest.functions";
+import {
+  expandNoteSection,
+  generateNoteFromMaterial,
+  planNoteOutline,
+  transcribeAudio,
+} from "@/lib/ingest.functions";
+
+type Depth = "standard" | "deep" | "ultra" | "mega";
+
+/** Rencana panjang catatan per tingkat kedalaman. */
+const DEPTH_PLAN: Record<
+  Depth,
+  { label: string; hint: string; sections: number; wordsPerSection: number }
+> = {
+  standard: { label: "Lengkap", hint: "±1.000 kata · 1 tahap", sections: 0, wordsPerSection: 0 },
+  deep: { label: "Sangat mendalam", hint: "±6.000 kata · 6 bagian", sections: 6, wordsPerSection: 900 },
+  ultra: { label: "Buku mini", hint: "±18.000 kata · 14 bagian", sections: 14, wordsPerSection: 1200 },
+  mega: { label: "Buku penuh", hint: "±35.000+ kata · 24 bagian", sections: 24, wordsPerSection: 1500 },
+};
 
 type Props = {
   open: boolean;
@@ -42,12 +60,15 @@ export function MaterialImportDialog({
 }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [kind, setKind] = useState<MaterialKind>("unsupported");
-  const [depth, setDepth] = useState<"standard" | "deep">("standard");
+  const [depth, setDepth] = useState<Depth>("deep");
   const [target, setTarget] = useState<"new" | "merge">("new");
   const [step, setStep] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const doTranscribe = useServerFn(transcribeAudio);
   const doGenerate = useServerFn(generateNoteFromMaterial);
+  const doOutline = useServerFn(planNoteOutline);
+  const doExpand = useServerFn(expandNoteSection);
 
   const pick = (f: File | undefined) => {
     if (!f) return;
