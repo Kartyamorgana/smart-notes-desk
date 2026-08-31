@@ -62,9 +62,9 @@ export const generateNoteFromMaterial = createServerFn({ method: "POST" })
       "- Tandai informasi tambahan yang kamu simpulkan sendiri (bukan dari materi) dengan awalan `_(pelengkap)_` supaya pengguna tahu.",
       "- Gunakan bahasa yang sama dengan materi (default Bahasa Indonesia). Gunakan code block berlabel bahasa untuk kode.",
       "- Keluarkan HANYA Markdown, tanpa penjelasan tambahan dan tanpa membungkusnya dalam code fence.",
-      data.depth === "deep"
-        ? "- Buat catatan sangat mendalam (setara bab buku), minimal 1200 kata."
-        : "- Buat catatan padat namun lengkap, sekitar 600-900 kata.",
+      data.depth === "standard"
+        ? "- Buat catatan padat namun lengkap, sekitar 800-1200 kata."
+        : "- Buat catatan sangat mendalam (setara bab buku), minimal 2000 kata.",
       data.existingContent
         ? "Pengguna sudah punya catatan lama (diberikan di bawah). Gabungkan: pertahankan isi yang benar, perbaiki yang salah, dan lengkapi yang kurang menjadi satu catatan utuh."
         : "",
