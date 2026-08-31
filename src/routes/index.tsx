@@ -659,17 +659,20 @@ function StudyNotesApp() {
         {active ? (
           <>
             {/* Mobile tabs */}
-            <div className="md:hidden border-b border-border bg-card/30">
-              <Tabs value={view} onValueChange={(v) => setView(v as "edit" | "preview" | "game")}>
-                <TabsList className="w-full rounded-none bg-transparent h-10">
-                  <TabsTrigger value="edit" className="flex-1 gap-1">
+            <div className="md:hidden border-b border-border bg-card/30 overflow-x-auto">
+              <Tabs value={view} onValueChange={(v) => setView(v as View)}>
+                <TabsList className="w-full min-w-max rounded-none bg-transparent h-10">
+                  <TabsTrigger value="edit" className="flex-1 gap-1 text-xs">
                     <Pencil className="w-3.5 h-3.5" /> Edit
                   </TabsTrigger>
-                  <TabsTrigger value="preview" className="flex-1 gap-1">
+                  <TabsTrigger value="preview" className="flex-1 gap-1 text-xs">
                     <Eye className="w-3.5 h-3.5" /> Preview
                   </TabsTrigger>
-                  <TabsTrigger value="game" className="flex-1 gap-1">
+                  <TabsTrigger value="game" className="flex-1 gap-1 text-xs">
                     <Gamepad2 className="w-3.5 h-3.5" /> Latihan
+                  </TabsTrigger>
+                  <TabsTrigger value="methods" className="flex-1 gap-1 text-xs">
+                    <Brain className="w-3.5 h-3.5" /> Metode
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
