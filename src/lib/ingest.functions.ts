@@ -143,3 +143,89 @@ export const generateStudyGame = createServerFn({ method: "POST" })
       return Parsed.parse(JSON.parse(m[0]));
     }
   });
+
+/** Tahap 1 dari catatan super panjang: rangka bab + ringkasan materi (digest). */
+export const planNoteOutline = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => OutlineInput.parse(d))
+  .handler(async ({ data }) => {
+    const { chat, stripFences } = await import("./ingest.server");
+    const system = [
+      "Kamu perancang buku belajar. Dari materi mentah (slide, transkrip, dokumen) kamu menyusun RANGKA buku catatan yang sangat lengkap.",
+      `Balas HANYA JSON valid tanpa code fence: {"title":string,"digest":string,"sections":[{"heading":string,"points":[string]}]}`,
+      `- "title": judul buku catatan yang deskriptif (bukan nama file).`,
+      `- "digest": ringkasan padat SEMUA isi materi (1500-3000 kata) berisi seluruh fakta, angka, istilah, contoh, dan urutan penjelasan penting. Ini akan dipakai sebagai satu-satunya sumber pada tahap penulisan berikutnya, jadi jangan ada informasi penting yang hilang.`,
+      `- "sections": tepat ${data.sectionCount} bagian berurutan yang menutup seluruh materi tanpa tumpang tindih. Setiap bagian punya 4-8 "points" berisi subtopik yang harus dibahas (boleh subtopik pelengkap yang belum ada di materi tapi wajib dipahami).`,
+      "Gunakan bahasa yang sama dengan materi (default Bahasa Indonesia).",
+    ].join("\n");
+
+    const blocks: Parameters<typeof chat>[1] = [
+      { type: "text", text: `Nama file materi: ${data.filename}` },
+    ];
+    if (data.existingContent?.trim()) {
+      blocks.push({ type: "text", text: `=== CATATAN LAMA PENGGUNA ===\n${data.existingContent}` });
+    }
+    if (data.pdfBase64) {
+      blocks.push({
+        type: "file",
+        file: {
+          filename: data.filename,
+          file_data: `data:${data.pdfMime ?? "application/pdf"};base64,${data.pdfBase64}`,
+        },
+      });
+      blocks.push({ type: "text", text: "Susun rangka dan digest dari dokumen di atas." });
+    } else {
+      blocks.push({
+        type: "text",
+        text: `=== ISI MATERI ===\n${(data.material ?? "").slice(0, 200000)}`,
+      });
+    }
+
+    const raw = stripFences(await chat(system, blocks));
+    const Parsed = z.object({
+      title: z.string().min(1),
+      digest: z.string().default(""),
+      sections: z
+        .array(z.object({ heading: z.string().min(1), points: z.array(z.string()).default([]) }))
+        .min(1),
+    });
+    try {
+      return Parsed.parse(JSON.parse(raw));
+    } catch {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error("Format rangka dari AI tidak valid");
+      return Parsed.parse(JSON.parse(m[0]));
+    }
+  });
+
+/** Tahap 2: tulis satu bagian panjang berdasarkan rangka + digest. */
+export const expandNoteSection = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => ExpandInput.parse(d))
+  .handler(async ({ data }) => {
+    const { chat, stripFences } = await import("./ingest.server");
+    const system = [
+      "Kamu penulis buku ajar. Tulis SATU bagian catatan belajar yang sangat mendalam dalam Markdown.",
+      `Judul buku: "${data.title}". Ini bagian ${data.index + 1} dari ${data.total}.`,
+      `Panjang target: ${data.targetWords}-${Math.round(data.targetWords * 1.4)} kata. Jangan lebih pendek dari target.`,
+      "Aturan:",
+      `- Mulai dengan heading \`## ${data.heading}\`, lalu gunakan \`###\` untuk setiap subtopik.`,
+      "- Setiap subtopik: definisi, penjelasan bertahap (paragraf utuh, bukan hanya bullet), cara kerja/alur, minimal satu contoh konkret, analogi sederhana, kesalahan umum, dan tips mengingat.",
+      "- Sertakan tabel Markdown bila membandingkan hal, dan code block berlabel bahasa bila topiknya teknis.",
+      "- Akhiri bagian dengan `> **Inti bagian ini:**` berisi 3-5 bullet ringkasan.",
+      "- Informasi pelengkap di luar materi tandai `_(pelengkap)_`.",
+      "- JANGAN menulis ulang isi bagian lain (daftar bagian diberikan agar kamu tidak tumpang tindih).",
+      "- Keluarkan HANYA Markdown bagian ini, tanpa pembuka/penutup meta dan tanpa code fence pembungkus.",
+      "Gunakan bahasa yang sama dengan materi (default Bahasa Indonesia).",
+    ].join("\n");
+
+    const text = stripFences(
+      await chat(system, [
+        { type: "text", text: `=== DAFTAR SEMUA BAGIAN ===\n${data.outlineHeadings.join("\n")}` },
+        {
+          type: "text",
+          text: `=== SUBTOPIK YANG HARUS DIBAHAS DI BAGIAN INI ===\n${data.points.join("\n")}`,
+        },
+        { type: "text", text: `=== RINGKASAN MATERI SUMBER ===\n${data.digest}` },
+      ]),
+    );
+    return { markdown: text.trim() };
+  });
