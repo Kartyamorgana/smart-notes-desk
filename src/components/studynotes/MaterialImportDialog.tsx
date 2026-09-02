@@ -99,6 +99,7 @@ export function MaterialImportDialog({
 
   const run = useCallback(async () => {
     if (!file) return;
+    setProgress(0);
     try {
       let material: string | undefined;
       let pdfBase64: string | undefined;
@@ -125,22 +126,71 @@ export function MaterialImportDialog({
         throw new Error("Tidak ada teks yang bisa dibaca dari berkas ini");
       }
 
-      setStep("AI menyusun & melengkapi catatan...");
-      const note = await doGenerate({
-        data: {
-          filename: file.name,
-          material,
-          pdfBase64,
-          pdfMime: pdfBase64 ? file.type || "application/pdf" : undefined,
-          existingContent: target === "merge" ? activeContent : undefined,
-          depth,
-        },
-      });
+      const plan = DEPTH_PLAN[depth];
+      let title: string;
+      let content: string;
 
-      if (target === "merge") onEnriched(note.title, note.content);
-      else await onCreated(note.title, note.content);
+      if (plan.sections > 0) {
+        setStep(`Menyusun rangka ${plan.sections} bagian...`);
+        setProgress(5);
+        const outline = await doOutline({
+          data: {
+            filename: file.name,
+            material,
+            pdfBase64,
+            pdfMime: pdfBase64 ? file.type || "application/pdf" : undefined,
+            existingContent: target === "merge" ? activeContent : undefined,
+            sectionCount: plan.sections,
+          },
+        });
 
-      toast.success("Catatan lengkap dibuat", { description: note.title });
+        const headings = outline.sections.map((s) => s.heading);
+        const parts: string[] = [];
+        for (let i = 0; i < outline.sections.length; i++) {
+          const s = outline.sections[i]!;
+          setStep(`Menulis bagian ${i + 1}/${outline.sections.length}: ${s.heading}`);
+          setProgress(Math.round(10 + (i / outline.sections.length) * 85));
+          const res = await doExpand({
+            data: {
+              title: outline.title,
+              digest: outline.digest,
+              heading: s.heading,
+              points: s.points,
+              outlineHeadings: headings,
+              targetWords: plan.wordsPerSection,
+              index: i,
+              total: outline.sections.length,
+            },
+          });
+          parts.push(res.markdown);
+        }
+        setProgress(98);
+        title = outline.title;
+        content = parts.join("\n\n");
+        if (target === "merge" && activeContent?.trim()) {
+          content = `${activeContent.trim()}\n\n${content}`;
+        }
+      } else {
+        setStep("AI menyusun & melengkapi catatan...");
+        setProgress(40);
+        const note = await doGenerate({
+          data: {
+            filename: file.name,
+            material,
+            pdfBase64,
+            pdfMime: pdfBase64 ? file.type || "application/pdf" : undefined,
+            existingContent: target === "merge" ? activeContent : undefined,
+            depth,
+          },
+        });
+        title = note.title;
+        content = note.content;
+      }
+
+      if (target === "merge") onEnriched(title, content);
+      else await onCreated(title, content);
+
+      toast.success("Catatan lengkap dibuat", { description: title });
       onOpenChange(false);
       reset();
     } catch (e) {
@@ -150,10 +200,25 @@ export function MaterialImportDialog({
       else toast.error("Gagal memproses materi", { description: msg });
     } finally {
       setStep(null);
+      setProgress(0);
     }
-  }, [file, kind, target, depth, activeContent, doGenerate, doTranscribe, onCreated, onEnriched, onOpenChange]);
+  }, [
+    file,
+    kind,
+    target,
+    depth,
+    activeContent,
+    doGenerate,
+    doOutline,
+    doExpand,
+    doTranscribe,
+    onCreated,
+    onEnriched,
+    onOpenChange,
+  ]);
 
   const busy = !!step;
+
 
   return (
     <Dialog
