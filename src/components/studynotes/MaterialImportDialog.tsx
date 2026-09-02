@@ -329,10 +329,28 @@ export function MaterialImportDialog({
         ) : null}
 
         {step && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" /> {step}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              <span className="break-words">{step}</span>
+            </div>
+            {progress > 0 && (
+              <div
+                role="progressbar"
+                aria-valuenow={progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
+              >
+                <div
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            )}
           </div>
         )}
+
 
         <DialogFooter>
           <Button variant="ghost" disabled={busy} onClick={() => onOpenChange(false)}>
