@@ -280,25 +280,30 @@ export function MaterialImportDialog({
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              { v: "standard", t: "Lengkap", d: "±600-900 kata, padat" },
-              { v: "deep", t: "Sangat mendalam", d: "Setara bab buku" },
-            ] as const
-          ).map((o) => (
+          {(Object.keys(DEPTH_PLAN) as Depth[]).map((v) => (
             <button
-              key={o.v}
+              key={v}
               type="button"
-              onClick={() => setDepth(o.v)}
-              className={`p-3 rounded-md border-2 text-left transition-colors ${
-                depth === o.v ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
+              disabled={busy}
+              onClick={() => setDepth(v)}
+              aria-pressed={depth === v}
+              className={`p-3 rounded-md border-2 text-left transition-colors disabled:opacity-60 ${
+                depth === v ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
               }`}
             >
-              <div className="font-medium text-sm">{o.t}</div>
-              <div className="text-xs text-muted-foreground">{o.d}</div>
+              <div className="font-medium text-sm">{DEPTH_PLAN[v].label}</div>
+              <div className="text-xs text-muted-foreground">{DEPTH_PLAN[v].hint}</div>
             </button>
           ))}
         </div>
+
+        {depth === "ultra" || depth === "mega" ? (
+          <p className="text-xs text-muted-foreground">
+            Mode ini menulis bagian per bagian dan bisa memakan waktu beberapa menit. Jangan tutup
+            dialog selama proses berjalan.
+          </p>
+        ) : null}
+
 
         {activeContent?.trim() ? (
           <div className="grid grid-cols-2 gap-2">
