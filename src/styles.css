@@ -105,13 +105,24 @@
   line-height: 1.7;
 }
 .prose-note h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 0.75rem; letter-spacing: -0.02em; }
-.prose-note h2 { font-size: 1.5rem; font-weight: 700; margin: 1.25rem 0 0.5rem; letter-spacing: -0.01em; }
-.prose-note h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+.prose-note h2 {
+  font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.75rem; letter-spacing: -0.01em;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid color-mix(in oklab, var(--color-primary) 30%, transparent);
+}
+.prose-note h3 {
+  font-size: 1.2rem; font-weight: 650; margin: 1.25rem 0 0.5rem;
+  padding-left: 0.65rem; border-left: 3px solid var(--color-primary);
+}
 .prose-note h4 { font-size: 1.05rem; font-weight: 600; margin: 0.75rem 0 0.25rem; }
 .prose-note p { margin: 0.75rem 0; }
 .prose-note ul { list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
 .prose-note ol { list-style: decimal; padding-left: 1.5rem; margin: 0.5rem 0; }
 .prose-note li { margin: 0.25rem 0; }
+.prose-note li::marker { color: var(--color-primary); }
+.prose-note ul:has(input[type="checkbox"]) { list-style: none; padding-left: 0.25rem; }
+.prose-note input[type="checkbox"] { accent-color: var(--color-primary); margin-right: 0.5rem; }
+.prose-note strong { color: color-mix(in oklab, var(--color-foreground) 85%, var(--color-primary) 40%); }
 .prose-note a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; }
 .prose-note blockquote {
   border-left: 3px solid var(--color-primary);
@@ -128,9 +139,60 @@
   font-size: 0.875em;
 }
 .prose-note hr { border: 0; border-top: 1px solid var(--color-border); margin: 1.5rem 0; }
-.prose-note table { border-collapse: collapse; margin: 1rem 0; width: 100%; }
+.prose-note table {
+  border-collapse: collapse; margin: 1rem 0; width: 100%;
+  display: block; overflow-x: auto; font-size: 0.925rem;
+}
 .prose-note th, .prose-note td { border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; text-align: left; }
 .prose-note th { background: var(--color-muted); font-weight: 600; }
+.prose-note tbody tr:nth-child(even) { background: color-mix(in oklab, var(--color-muted) 45%, transparent); }
+
+/* Reading meta bar */
+.note-meta {
+  display: flex; flex-wrap: wrap; gap: 0.75rem;
+  font-size: 0.75rem; color: var(--color-muted-foreground);
+  margin-bottom: 0.5rem;
+}
+.note-meta span { display: inline-flex; align-items: center; gap: 0.3rem; }
+
+/* Callouts */
+.callout {
+  margin: 1.1rem 0;
+  border: 1px solid color-mix(in oklab, var(--cal) 35%, transparent);
+  border-left: 4px solid var(--cal);
+  background: color-mix(in oklab, var(--cal) 8%, transparent);
+  border-radius: 0.6rem;
+  padding: 0.75rem 1rem;
+}
+.callout-title {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-weight: 650; font-size: 0.85rem; color: var(--cal);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+.callout-body > :first-child { margin-top: 0; }
+.callout-body > :last-child { margin-bottom: 0; }
+.callout-note { --cal: var(--color-primary); }
+.callout-tip { --cal: oklch(0.62 0.16 160); }
+.callout-important { --cal: oklch(0.6 0.2 300); }
+.callout-warning { --cal: oklch(0.68 0.16 75); }
+.callout-caution { --cal: var(--color-destructive); }
+
+/* Collapsible self-check */
+.prose-note details {
+  margin: 0.85rem 0;
+  border: 1px dashed color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  background: color-mix(in oklab, var(--color-primary) 5%, transparent);
+}
+.prose-note summary {
+  cursor: pointer; font-weight: 600; font-size: 0.925rem;
+  color: color-mix(in oklab, var(--color-foreground) 80%, var(--color-primary) 50%);
+}
+.prose-note details[open] summary { margin-bottom: 0.5rem; }
+.prose-note em:first-child { font-style: italic; }
+
 
 /* Code block wrapper styling */
 .code-block {

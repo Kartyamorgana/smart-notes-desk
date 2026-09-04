@@ -36,16 +36,33 @@ export function StudyGamePanel({ content, noteId }: { content: string; noteId: s
     setMatched([]);
   };
 
+  const parts = Math.max(1, Math.min(8, Math.ceil(content.length / 22000)));
+
   const generate = async () => {
     if (content.trim().length < 20) {
       toast.error("Catatan terlalu pendek untuk dibuat latihan");
       return;
     }
     setLoading(true);
+    if (parts > 1) {
+      toast.info(`Catatan panjang — dipecah jadi ${parts} bagian`, {
+        description: "Butuh sekitar 1-3 menit, jangan tutup halaman.",
+      });
+    }
     try {
-      const res = await run({ data: { content } });
+      const res = (await run({ data: { content } })) as Game & {
+        parts?: number;
+        failedParts?: number;
+      };
       setGame(res as Game);
       reset();
+      if (res.failedParts) {
+        toast.warning(`${res.failedParts} bagian gagal diproses`, {
+          description: "Latihan dibuat dari bagian yang berhasil.",
+        });
+      } else {
+        toast.success(`Latihan siap: ${res.quiz.length} kuis, ${res.flashcards.length} flashcard`);
+      }
     } catch (e) {
       const msg = (e as Error).message;
       if (msg.includes("429")) toast.error("Terlalu banyak permintaan, coba lagi sebentar");
@@ -55,6 +72,7 @@ export function StudyGamePanel({ content, noteId }: { content: string; noteId: s
       setLoading(false);
     }
   };
+
 
   const score = useMemo(() => {
     if (!game) return 0;
@@ -88,13 +106,18 @@ export function StudyGamePanel({ content, noteId }: { content: string; noteId: s
           <Gamepad2 className="w-7 h-7" />
         </div>
         <h3 className="font-semibold mb-1">Mode Belajar Interaktif</h3>
-        <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+        <p className="text-sm text-muted-foreground mb-2 max-w-sm mx-auto">
           Ubah catatan ini menjadi kuis pilihan ganda, flashcard, dan permainan mencocokkan istilah.
+        </p>
+        <p className="text-xs text-muted-foreground mb-4">
+          {content.trim().split(/\s+/).length.toLocaleString("id-ID")} kata
+          {parts > 1 ? ` • diproses dalam ${parts} bagian` : ""}
         </p>
         <Button onClick={generate} disabled={loading} className="gap-1">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gamepad2 className="w-4 h-4" />}
-          Buat latihan dari catatan
+          {loading ? "Menyiapkan latihan..." : "Buat latihan dari catatan"}
         </Button>
+
       </div>
     );
   }
