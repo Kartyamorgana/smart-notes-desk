@@ -106,13 +106,18 @@ export function StudyGamePanel({ content, noteId }: { content: string; noteId: s
           <Gamepad2 className="w-7 h-7" />
         </div>
         <h3 className="font-semibold mb-1">Mode Belajar Interaktif</h3>
-        <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+        <p className="text-sm text-muted-foreground mb-2 max-w-sm mx-auto">
           Ubah catatan ini menjadi kuis pilihan ganda, flashcard, dan permainan mencocokkan istilah.
+        </p>
+        <p className="text-xs text-muted-foreground mb-4">
+          {content.trim().split(/\s+/).length.toLocaleString("id-ID")} kata
+          {parts > 1 ? ` • diproses dalam ${parts} bagian` : ""}
         </p>
         <Button onClick={generate} disabled={loading} className="gap-1">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gamepad2 className="w-4 h-4" />}
-          Buat latihan dari catatan
+          {loading ? "Menyiapkan latihan..." : "Buat latihan dari catatan"}
         </Button>
+
       </div>
     );
   }
