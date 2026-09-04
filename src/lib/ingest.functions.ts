@@ -314,8 +314,11 @@ export const expandNoteSection = createServerFn({ method: "POST" })
       `- Mulai dengan heading \`## ${data.heading}\`, lalu gunakan \`###\` untuk setiap subtopik.`,
       "- Setiap subtopik: definisi, penjelasan bertahap (paragraf utuh, bukan hanya bullet), cara kerja/alur, minimal satu contoh konkret, analogi sederhana, kesalahan umum, dan tips mengingat.",
       "- Sertakan tabel Markdown bila membandingkan hal, dan code block berlabel bahasa bila topiknya teknis.",
-      "- Akhiri bagian dengan `> **Inti bagian ini:**` berisi 3-5 bullet ringkasan.",
+      "Agar tidak membosankan (WAJIB): pakai emoji pada heading bagian, callout GitHub-style `> [!NOTE]` / `> [!TIP]` / `> [!WARNING]` / `> [!IMPORTANT]` secara berkala, paragraf pendek 3-4 baris, **bold** untuk istilah kunci, checklist `- [ ]` untuk langkah, dan satu diagram alur sederhana (ASCII/mermaid dalam code block) bila relevan.",
+      "- Setiap subtopik diakhiri baris `**💡 Cara mengingat:**` satu kalimat, dan tambahkan `<details><summary>Uji diri: <pertanyaan></summary> jawaban </details>` satu kali per subtopik.",
+      "- Akhiri bagian dengan `> [!IMPORTANT]` berisi 3-5 bullet ringkasan inti bagian ini.",
       "- Informasi pelengkap di luar materi tandai `_(pelengkap)_`.",
+
       "- JANGAN menulis ulang isi bagian lain (daftar bagian diberikan agar kamu tidak tumpang tindih).",
       "- Keluarkan HANYA Markdown bagian ini, tanpa pembuka/penutup meta dan tanpa code fence pembungkus.",
       "Gunakan bahasa yang sama dengan materi (default Bahasa Indonesia).",
