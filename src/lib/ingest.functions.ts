@@ -91,11 +91,19 @@ export const generateNoteFromMaterial = createServerFn({ method: "POST" })
       "Materi sumber biasanya hanya garis besar / poin singkat. Tugasmu MELENGKAPI: jelaskan setiap poin secara utuh, tambahkan definisi, konteks, cara kerja, contoh nyata, contoh kode bila topiknya teknis, analogi sederhana, kesalahan umum, dan rangkuman.",
       "Aturan output:",
       "- Baris pertama: `# <Judul catatan>` (judul deskriptif, bukan nama file).",
-      "- Struktur: `## Ringkasan Singkat`, `## Konsep Inti` (subbagian per topik dengan penjelasan paragraf + bullet), `## Contoh & Penerapan`, `## Istilah Penting` (tabel istilah–penjelasan), `## Kesalahan Umum`, `## Poin Kunci untuk Diingat`, `## Pertanyaan Refleksi`.",
+      "- Struktur: `## 🧭 Ringkasan Singkat`, `## 🧠 Konsep Inti` (subbagian per topik dengan penjelasan paragraf + bullet), `## 🛠️ Contoh & Penerapan`, `## 📖 Istilah Penting` (tabel istilah–penjelasan), `## ⚠️ Kesalahan Umum`, `## 🎯 Poin Kunci untuk Diingat`, `## ❓ Pertanyaan Refleksi`.",
       "- Setiap topik dari materi WAJIB muncul; jangan ada poin sumber yang hilang.",
       "- Tandai informasi tambahan yang kamu simpulkan sendiri (bukan dari materi) dengan awalan `_(pelengkap)_` supaya pengguna tahu.",
+      "Agar catatan menarik dan tidak membosankan (WAJIB):",
+      "- Awali catatan dengan blok `> [!TIP]` berisi TL;DR 2-3 baris dan estimasi waktu baca.",
+      "- Selipkan callout GitHub-style secara berkala: `> [!NOTE]` (info penting), `> [!TIP]` (trik menghafal/analogi), `> [!WARNING]` (kesalahan umum), `> [!IMPORTANT]` (harus diingat).",
+      "- Gunakan emoji pada heading dan variasi format: tabel perbandingan, checklist `- [ ]`, diagram alur ASCII/mermaid sederhana dalam code block, dan bullet berlapis maksimal 2 tingkat.",
+      "- Setiap subbagian besar diakhiri baris `**💡 Cara mengingat:**` satu kalimat.",
+      "- Akhiri catatan dengan `## ✅ Cek Pemahaman` berisi 5 pertanyaan singkat plus jawaban dalam `<details><summary>Jawaban</summary> ... </details>`.",
+      "- Paragraf pendek (maksimal 3-4 baris), gunakan **bold** untuk istilah kunci agar mudah dipindai.",
       "- Gunakan bahasa yang sama dengan materi (default Bahasa Indonesia). Gunakan code block berlabel bahasa untuk kode.",
       "- Keluarkan HANYA Markdown, tanpa penjelasan tambahan dan tanpa membungkusnya dalam code fence.",
+
       data.depth === "standard"
         ? "- Buat catatan padat namun lengkap, sekitar 800-1200 kata."
         : "- Buat catatan sangat mendalam (setara bab buku), minimal 2000 kata.",
