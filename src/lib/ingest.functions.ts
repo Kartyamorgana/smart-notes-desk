@@ -37,8 +37,42 @@ const ExpandInput = z.object({
 });
 
 const GameInput = z.object({
-  content: z.string().min(20).max(60000),
+  content: z.string().min(20).max(1000000),
 });
+
+/** Pecah catatan panjang jadi beberapa bagian seimbang berdasarkan heading. */
+function chunkNote(content: string, maxChunks: number, maxChars: number) {
+  const lines = content.split("\n");
+  const blocks: string[] = [];
+  let cur: string[] = [];
+  for (const line of lines) {
+    if (/^#{1,3}\s/.test(line) && cur.join("\n").trim().length > 400) {
+      blocks.push(cur.join("\n"));
+      cur = [];
+    }
+    cur.push(line);
+  }
+  if (cur.length) blocks.push(cur.join("\n"));
+
+  const chunks: string[] = [];
+  let buf = "";
+  for (const b of blocks) {
+    const piece = b.length > maxChars ? b.slice(0, maxChars) : b;
+    if (buf && buf.length + piece.length > maxChars) {
+      chunks.push(buf);
+      buf = piece;
+    } else {
+      buf = buf ? `${buf}\n${piece}` : piece;
+    }
+  }
+  if (buf.trim()) chunks.push(buf);
+
+  if (chunks.length <= maxChunks) return chunks;
+  // ambil secara merata agar seluruh catatan terwakili
+  const step = chunks.length / maxChunks;
+  return Array.from({ length: maxChunks }, (_, i) => chunks[Math.floor(i * step)]!);
+}
+
 
 export const transcribeAudio = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => TranscribeInput.parse(d))
