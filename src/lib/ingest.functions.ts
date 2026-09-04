@@ -235,6 +235,9 @@ export const generateStudyGame = createServerFn({ method: "POST" })
       throw new Error("AI tidak menghasilkan latihan yang valid");
     }
     return { ...merged, parts: chunks.length, failedParts: errors.length };
+  });
+
+
 
 
 /** Tahap 1 dari catatan super panjang: rangka bab + ringkasan materi (digest). */
