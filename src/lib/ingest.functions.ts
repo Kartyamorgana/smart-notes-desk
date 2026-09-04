@@ -141,42 +141,101 @@ export const generateNoteFromMaterial = createServerFn({ method: "POST" })
     return { title: title.slice(0, 120), content };
   });
 
+const GameSchema = z.object({
+  quiz: z
+    .array(
+      z.object({
+        question: z.string(),
+        options: z.array(z.string()).min(2),
+        answer: z.number().int().min(0),
+        explanation: z.string().default(""),
+      }),
+    )
+    .default([]),
+  flashcards: z.array(z.object({ front: z.string(), back: z.string() })).default([]),
+  matching: z.array(z.object({ term: z.string(), definition: z.string() })).default([]),
+});
+
 export const generateStudyGame = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => GameInput.parse(d))
   .handler(async ({ data }) => {
     const { chat, stripFences } = await import("./ingest.server");
+
+    const CHUNK_CHARS = 22000;
+    const chunks = chunkNote(data.content, 8, CHUNK_CHARS);
+    const perChunkQuiz = chunks.length > 1 ? Math.max(2, Math.ceil(14 / chunks.length)) : 10;
+    const perChunkCards = chunks.length > 1 ? Math.max(2, Math.ceil(18 / chunks.length)) : 10;
+    const perChunkPairs = chunks.length > 1 ? Math.max(1, Math.ceil(10 / chunks.length)) : 6;
+
     const system = [
       "Kamu membuat materi latihan interaktif dari sebuah catatan belajar.",
       "Balas HANYA JSON valid (tanpa code fence) dengan bentuk:",
       '{"quiz":[{"question":string,"options":[string,string,string,string],"answer":0,"explanation":string}],"flashcards":[{"front":string,"back":string}],"matching":[{"term":string,"definition":string}]}',
-      "Buat 8 soal quiz pilihan ganda (indeks jawaban 0-3, pengecoh masuk akal, sertakan penjelasan singkat), 8 flashcard, dan 6 pasangan istilah–definisi.",
+      `Buat ${perChunkQuiz} soal quiz pilihan ganda (indeks jawaban 0-3, pengecoh masuk akal, sertakan penjelasan singkat), ${perChunkCards} flashcard, dan ${perChunkPairs} pasangan istilah–definisi.`,
+      chunks.length > 1
+        ? "Potongan catatan ini adalah bagian dari catatan yang jauh lebih panjang. Buat latihan HANYA dari potongan yang diberikan."
+        : "",
       "Semua isi harus bersumber dari catatan. Gunakan bahasa yang sama dengan catatan.",
-    ].join("\n");
-    const raw = stripFences(await chat(system, [{ type: "text", text: data.content }]));
-    const Parsed = z.object({
-      quiz: z
-        .array(
-          z.object({
-            question: z.string(),
-            options: z.array(z.string()).min(2),
-            answer: z.number().int().min(0),
-            explanation: z.string().default(""),
-          }),
-        )
-        .default([]),
-      flashcards: z.array(z.object({ front: z.string(), back: z.string() })).default([]),
-      matching: z
-        .array(z.object({ term: z.string(), definition: z.string() }))
-        .default([]),
-    });
-    try {
-      return Parsed.parse(JSON.parse(raw));
-    } catch {
-      const m = raw.match(/\{[\s\S]*\}/);
-      if (!m) throw new Error("Format hasil AI tidak valid");
-      return Parsed.parse(JSON.parse(m[0]));
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const parse = (raw: string) => {
+      try {
+        return GameSchema.parse(JSON.parse(raw));
+      } catch {
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error("Format hasil AI tidak valid");
+        return GameSchema.parse(JSON.parse(m[0]));
+      }
+    };
+
+    const results: z.infer<typeof GameSchema>[] = [];
+    const errors: string[] = [];
+    // jalankan 2 potongan sekaligus supaya tidak kena rate limit
+    for (let i = 0; i < chunks.length; i += 2) {
+      const batch = chunks.slice(i, i + 2);
+      const settled = await Promise.allSettled(
+        batch.map(async (c) => parse(stripFences(await chat(system, [{ type: "text", text: c }])))),
+      );
+      for (const s of settled) {
+        if (s.status === "fulfilled") results.push(s.value);
+        else errors.push((s.reason as Error)?.message ?? "gagal");
+      }
     }
-  });
+
+    if (!results.length) throw new Error(errors[0] ?? "Gagal membuat latihan");
+
+    const dedupe = <T,>(arr: T[], keyOf: (v: T) => string) => {
+      const seen = new Set<string>();
+      return arr.filter((v) => {
+        const k = keyOf(v).trim().toLowerCase();
+        if (!k || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+    };
+
+    const merged = {
+      quiz: dedupe(
+        results.flatMap((r) => r.quiz).filter((q) => q.answer < q.options.length),
+        (q) => q.question,
+      ).slice(0, 20),
+      flashcards: dedupe(
+        results.flatMap((r) => r.flashcards),
+        (c) => c.front,
+      ).slice(0, 24),
+      matching: dedupe(
+        results.flatMap((r) => r.matching),
+        (p) => p.term,
+      ).slice(0, 12),
+    };
+
+    if (!merged.quiz.length && !merged.flashcards.length) {
+      throw new Error("AI tidak menghasilkan latihan yang valid");
+    }
+    return { ...merged, parts: chunks.length, failedParts: errors.length };
+
 
 /** Tahap 1 dari catatan super panjang: rangka bab + ringkasan materi (digest). */
 export const planNoteOutline = createServerFn({ method: "POST" })
