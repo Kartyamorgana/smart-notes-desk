@@ -155,8 +155,8 @@ export function MarkdownPreview({ source }: { source: string }) {
         </div>
       )}
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeRaw, [rehypeKatex, { throwOnError: false, strict: false }], rehypeHighlight]}
         components={{
           blockquote: ({ children }) => <Blockquote>{children}</Blockquote>,
           pre: ({ children }) => <>{children}</>,
