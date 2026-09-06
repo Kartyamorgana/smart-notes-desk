@@ -182,7 +182,7 @@ export function MarkdownPreview({ source }: { source: string }) {
           },
         }}
       >
-        {source || "*Start writing to see the preview...*"}
+        {source ? normalizeMath(source) : "*Start writing to see the preview...*"}
       </ReactMarkdown>
     </div>
   );
