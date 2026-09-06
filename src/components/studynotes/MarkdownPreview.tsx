@@ -60,6 +60,52 @@ function nodeText(node: React.ReactNode): string {
   return el.props ? nodeText(el.props.children) : "";
 }
 
+const SYMBOLS: Record<string, string> = {
+  rightarrow: "→",
+  Rightarrow: "⇒",
+  leftarrow: "←",
+  Leftarrow: "⇐",
+  leftrightarrow: "↔",
+  to: "→",
+  times: "×",
+  cdot: "·",
+  approx: "≈",
+  neq: "≠",
+  leq: "≤",
+  geq: "≥",
+  pm: "±",
+  infty: "∞",
+  alpha: "α",
+  beta: "β",
+  gamma: "γ",
+  delta: "δ",
+  Delta: "Δ",
+  theta: "θ",
+  lambda: "λ",
+  mu: "μ",
+  pi: "π",
+  sigma: "σ",
+  Sigma: "Σ",
+  omega: "ω",
+  Omega: "Ω",
+};
+
+/** Normalisasi notasi LaTeX agar konsisten dipakai remark-math. */
+export function normalizeMath(src: string): string {
+  let out = src;
+  // \[ ... \] -> $$ ... $$ ; \( ... \) -> $ ... $
+  out = out.replace(/\\\[([\s\S]*?)\\\]/g, (_m, inner) => `\n$$\n${String(inner).trim()}\n$$\n`);
+  out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_m, inner) => `$${String(inner).trim()}$`);
+  // Perintah LaTeX yang berdiri sendiri di luar math -> simbol unicode
+  const segments = out.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|`[^`]*`|```[\s\S]*?```)/g);
+  return segments
+    .map((seg, i) => {
+      if (i % 2 === 1) return seg;
+      return seg.replace(/\\([A-Za-z]+)/g, (m, name: string) => SYMBOLS[name] ?? m);
+    })
+    .join("");
+}
+
 function Blockquote({ children }: { children?: React.ReactNode }) {
   const text = nodeText(children).trim();
   const match = text.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
