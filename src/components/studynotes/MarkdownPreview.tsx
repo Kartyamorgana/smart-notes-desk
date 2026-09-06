@@ -1,5 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
 import { useCallback, useMemo, useState } from "react";
@@ -58,6 +60,52 @@ function nodeText(node: React.ReactNode): string {
   return el.props ? nodeText(el.props.children) : "";
 }
 
+const SYMBOLS: Record<string, string> = {
+  rightarrow: "→",
+  Rightarrow: "⇒",
+  leftarrow: "←",
+  Leftarrow: "⇐",
+  leftrightarrow: "↔",
+  to: "→",
+  times: "×",
+  cdot: "·",
+  approx: "≈",
+  neq: "≠",
+  leq: "≤",
+  geq: "≥",
+  pm: "±",
+  infty: "∞",
+  alpha: "α",
+  beta: "β",
+  gamma: "γ",
+  delta: "δ",
+  Delta: "Δ",
+  theta: "θ",
+  lambda: "λ",
+  mu: "μ",
+  pi: "π",
+  sigma: "σ",
+  Sigma: "Σ",
+  omega: "ω",
+  Omega: "Ω",
+};
+
+/** Normalisasi notasi LaTeX agar konsisten dipakai remark-math. */
+export function normalizeMath(src: string): string {
+  let out = src;
+  // \[ ... \] -> $$ ... $$ ; \( ... \) -> $ ... $
+  out = out.replace(/\\\[([\s\S]*?)\\\]/g, (_m, inner) => `\n$$\n${String(inner).trim()}\n$$\n`);
+  out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_m, inner) => `$${String(inner).trim()}$`);
+  // Perintah LaTeX yang berdiri sendiri di luar math -> simbol unicode
+  const segments = out.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|`[^`]*`|```[\s\S]*?```)/g);
+  return segments
+    .map((seg, i) => {
+      if (i % 2 === 1) return seg;
+      return seg.replace(/\\([A-Za-z]+)/g, (m, name: string) => SYMBOLS[name] ?? m);
+    })
+    .join("");
+}
+
 function Blockquote({ children }: { children?: React.ReactNode }) {
   const text = nodeText(children).trim();
   const match = text.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
@@ -73,7 +121,16 @@ function Blockquote({ children }: { children?: React.ReactNode }) {
         {meta.label}
       </div>
       <div className="callout-body">
-        {body.trim() ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown> : children}
+        {body.trim() ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+          >
+            {normalizeMath(body)}
+          </ReactMarkdown>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );
@@ -98,8 +155,8 @@ export function MarkdownPreview({ source }: { source: string }) {
         </div>
       )}
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeRaw, [rehypeKatex, { throwOnError: false, strict: false }], rehypeHighlight]}
         components={{
           blockquote: ({ children }) => <Blockquote>{children}</Blockquote>,
           pre: ({ children }) => <>{children}</>,
@@ -125,7 +182,7 @@ export function MarkdownPreview({ source }: { source: string }) {
           },
         }}
       >
-        {source || "*Start writing to see the preview...*"}
+        {source ? normalizeMath(source) : "*Start writing to see the preview...*"}
       </ReactMarkdown>
     </div>
   );
