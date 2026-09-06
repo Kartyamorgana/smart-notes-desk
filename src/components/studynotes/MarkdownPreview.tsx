@@ -75,7 +75,16 @@ function Blockquote({ children }: { children?: React.ReactNode }) {
         {meta.label}
       </div>
       <div className="callout-body">
-        {body.trim() ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown> : children}
+        {body.trim() ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
+          >
+            {normalizeMath(body)}
+          </ReactMarkdown>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );
