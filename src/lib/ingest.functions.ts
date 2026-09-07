@@ -38,6 +38,9 @@ const ExpandInput = z.object({
 
 const GameInput = z.object({
   content: z.string().min(20).max(1000000),
+  type: z.enum(["quiz", "flashcards", "matching", "blanks", "all"]).default("all"),
+  count: z.number().int().min(4).max(40).default(10),
+  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
 });
 
 /** Pecah catatan panjang jadi beberapa bagian seimbang berdasarkan heading. */
@@ -162,7 +165,16 @@ const GameSchema = z.object({
     .default([]),
   flashcards: z.array(z.object({ front: z.string(), back: z.string() })).default([]),
   matching: z.array(z.object({ term: z.string(), definition: z.string() })).default([]),
+  blanks: z
+    .array(z.object({ sentence: z.string(), answer: z.string(), hint: z.string().default("") }))
+    .default([]),
 });
+
+const DIFF_TEXT = {
+  easy: "Tingkat mudah: uji ingatan definisi dan fakta dasar, kalimat singkat dan jelas.",
+  medium: "Tingkat sedang: campur ingatan dan pemahaman, pengecoh mirip tapi jelas salah.",
+  hard: "Tingkat sulit: uji penerapan, analisis, dan pembedaan konsep yang mirip; pengecoh sangat menantang.",
+} as const;
 
 export const generateStudyGame = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => GameInput.parse(d))
@@ -170,16 +182,39 @@ export const generateStudyGame = createServerFn({ method: "POST" })
     const { chat, stripFences } = await import("./ingest.server");
 
     const CHUNK_CHARS = 22000;
-    const chunks = chunkNote(data.content, 8, CHUNK_CHARS);
-    const perChunkQuiz = chunks.length > 1 ? Math.max(2, Math.ceil(14 / chunks.length)) : 10;
-    const perChunkCards = chunks.length > 1 ? Math.max(2, Math.ceil(18 / chunks.length)) : 10;
-    const perChunkPairs = chunks.length > 1 ? Math.max(1, Math.ceil(10 / chunks.length)) : 6;
+    const wanted = data.type === "all" ? (["quiz", "flashcards", "matching"] as const) : ([data.type] as const);
+    // makin banyak soal diminta -> makin banyak potongan catatan dipakai
+    const maxChunks = Math.min(6, Math.max(1, Math.ceil(data.count / 6)));
+    const chunks = chunkNote(data.content, maxChunks, CHUNK_CHARS);
+    const per = (n: number) => Math.max(2, Math.ceil(n / chunks.length));
+
+    const shapeFor = () => {
+      const parts: string[] = [];
+      if (wanted.includes("quiz"))
+        parts.push('"quiz":[{"question":string,"options":[string,string,string,string],"answer":0,"explanation":string}]');
+      if (wanted.includes("flashcards")) parts.push('"flashcards":[{"front":string,"back":string}]');
+      if (wanted.includes("matching")) parts.push('"matching":[{"term":string,"definition":string}]');
+      if (wanted.includes("blanks"))
+        parts.push('"blanks":[{"sentence":string dengan bagian rumpang ditulis ___,"answer":string,"hint":string}]');
+      return `{${parts.join(",")}}`;
+    };
+
+    const tasks: string[] = [];
+    if (wanted.includes("quiz"))
+      tasks.push(`${per(data.count)} soal quiz pilihan ganda (4 opsi, indeks jawaban 0-3, sertakan penjelasan singkat)`);
+    if (wanted.includes("flashcards"))
+      tasks.push(`${per(data.type === "all" ? Math.round(data.count * 1.2) : data.count)} flashcard (depan: pertanyaan/istilah, belakang: jawaban ringkas)`);
+    if (wanted.includes("matching"))
+      tasks.push(`${per(data.type === "all" ? Math.max(6, Math.round(data.count * 0.6)) : data.count)} pasangan istilah–definisi singkat`);
+    if (wanted.includes("blanks"))
+      tasks.push(`${per(data.count)} kalimat isi rumpang (satu jawaban per kalimat, tulis bagian kosong sebagai ___, beri hint singkat)`);
 
     const system = [
       "Kamu membuat materi latihan interaktif dari sebuah catatan belajar.",
       "Balas HANYA JSON valid (tanpa code fence) dengan bentuk:",
-      '{"quiz":[{"question":string,"options":[string,string,string,string],"answer":0,"explanation":string}],"flashcards":[{"front":string,"back":string}],"matching":[{"term":string,"definition":string}]}',
-      `Buat ${perChunkQuiz} soal quiz pilihan ganda (indeks jawaban 0-3, pengecoh masuk akal, sertakan penjelasan singkat), ${perChunkCards} flashcard, dan ${perChunkPairs} pasangan istilah–definisi.`,
+      shapeFor(),
+      `Buat ${tasks.join(", ")}.`,
+      DIFF_TEXT[data.difficulty],
       chunks.length > 1
         ? "Potongan catatan ini adalah bagian dari catatan yang jauh lebih panjang. Buat latihan HANYA dari potongan yang diberikan."
         : "",
@@ -224,24 +259,29 @@ export const generateStudyGame = createServerFn({ method: "POST" })
       });
     };
 
+    const limit = data.type === "all" ? data.count : data.count;
     const merged = {
       quiz: dedupe(
         results.flatMap((r) => r.quiz).filter((q) => q.answer < q.options.length),
         (q) => q.question,
-      ).slice(0, 20),
+      ).slice(0, limit),
       flashcards: dedupe(
         results.flatMap((r) => r.flashcards),
         (c) => c.front,
-      ).slice(0, 24),
+      ).slice(0, data.type === "all" ? Math.round(data.count * 1.2) : limit),
       matching: dedupe(
         results.flatMap((r) => r.matching),
         (p) => p.term,
-      ).slice(0, 12),
+      ).slice(0, data.type === "all" ? Math.max(6, Math.round(data.count * 0.6)) : Math.min(limit, 14)),
+      blanks: dedupe(
+        results.flatMap((r) => r.blanks).filter((b) => b.sentence.includes("_")),
+        (b) => b.sentence,
+      ).slice(0, limit),
     };
 
-    if (!merged.quiz.length && !merged.flashcards.length) {
-      throw new Error("AI tidak menghasilkan latihan yang valid");
-    }
+    const totalItems =
+      merged.quiz.length + merged.flashcards.length + merged.matching.length + merged.blanks.length;
+    if (!totalItems) throw new Error("AI tidak menghasilkan latihan yang valid");
     return { ...merged, parts: chunks.length, failedParts: errors.length };
   });
 
