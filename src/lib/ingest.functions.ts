@@ -38,6 +38,9 @@ const ExpandInput = z.object({
 
 const GameInput = z.object({
   content: z.string().min(20).max(1000000),
+  type: z.enum(["quiz", "flashcards", "matching", "blanks", "all"]).default("all"),
+  count: z.number().int().min(4).max(40).default(10),
+  difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
 });
 
 /** Pecah catatan panjang jadi beberapa bagian seimbang berdasarkan heading. */
