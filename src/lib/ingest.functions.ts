@@ -182,7 +182,9 @@ export const generateStudyGame = createServerFn({ method: "POST" })
     const { chat, stripFences } = await import("./ingest.server");
 
     const CHUNK_CHARS = 22000;
-    const wanted = data.type === "all" ? (["quiz", "flashcards", "matching"] as const) : ([data.type] as const);
+    type GameKind = "quiz" | "flashcards" | "matching" | "blanks";
+    const wanted: GameKind[] =
+      data.type === "all" ? ["quiz", "flashcards", "matching"] : [data.type];
     // makin banyak soal diminta -> makin banyak potongan catatan dipakai
     const maxChunks = Math.min(6, Math.max(1, Math.ceil(data.count / 6)));
     const chunks = chunkNote(data.content, maxChunks, CHUNK_CHARS);
