@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Timer,
   Play,
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownPreview } from "@/components/studynotes/MarkdownPreview";
+import { POMODORO_PRESETS, usePomodoro } from "@/lib/pomodoro";
 
 type Props = {
   content: string;
@@ -23,91 +24,32 @@ type Props = {
   onAppend?: (markdown: string) => void;
 };
 
-/* ------------------------------ Pomodoro ------------------------------ */
+/* ------------------------------ Pomodoro (global) ------------------------------ */
 
-const PRESETS = [
-  { id: "classic", label: "Klasik", focus: 25, short: 5, long: 15 },
-  { id: "deep", label: "Deep work", focus: 50, short: 10, long: 20 },
-  { id: "sprint", label: "Sprint", focus: 15, short: 3, long: 10 },
-] as const;
+function Pomodoro() {
+  const {
+    presetId,
+    setPresetId,
+    phase,
+    left,
+    total,
+    running,
+    done,
+    toggle,
+    reset,
+    switchPhase,
+    phaseLabel,
+    mmss,
+  } = usePomodoro();
 
-type Phase = "focus" | "short" | "long";
-
-function Pomodoro({ noteId }: { noteId: string }) {
-  const storeKey = `studynotes-pomodoro-${noteId}`;
-  const [presetId, setPresetId] = useState<(typeof PRESETS)[number]["id"]>("classic");
-  const preset = PRESETS.find((p) => p.id === presetId)!;
-  const [phase, setPhase] = useState<Phase>("focus");
-  const [left, setLeft] = useState(preset.focus * 60);
-  const [running, setRunning] = useState(false);
-  const [done, setDone] = useState(0);
-
-  useEffect(() => {
-    const raw = localStorage.getItem(storeKey);
-    if (raw) {
-      try {
-        const d = JSON.parse(raw) as { done?: number };
-        setDone(d.done ?? 0);
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [storeKey]);
-
-  const total = phase === "focus" ? preset.focus * 60 : phase === "short" ? preset.short * 60 : preset.long * 60;
-
-  const reset = useCallback(
-    (p: Phase = phase) => {
-      setRunning(false);
-      setPhase(p);
-      setLeft((p === "focus" ? preset.focus : p === "short" ? preset.short : preset.long) * 60);
-    },
-    [phase, preset]
-  );
-
-  useEffect(() => {
-    reset("focus");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presetId]);
-
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => {
-      setLeft((v) => {
-        if (v > 1) return v - 1;
-        // phase finished
-        setRunning(false);
-        if (phase === "focus") {
-          setDone((d) => {
-            const nd = d + 1;
-            localStorage.setItem(storeKey, JSON.stringify({ done: nd }));
-            const nextPhase: Phase = nd % 4 === 0 ? "long" : "short";
-            setPhase(nextPhase);
-            setLeft((nextPhase === "long" ? preset.long : preset.short) * 60);
-            return nd;
-          });
-        } else {
-          setPhase("focus");
-          setLeft(preset.focus * 60);
-        }
-        return 0;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [running, phase, preset, storeKey]);
-
-  const mm = String(Math.floor(left / 60)).padStart(2, "0");
-  const ss = String(left % 60).padStart(2, "0");
   const pct = total > 0 ? ((total - left) / total) * 100 : 0;
   const R = 52;
   const C = 2 * Math.PI * R;
 
-  const phaseLabel = phase === "focus" ? "Fokus" : phase === "short" ? "Istirahat singkat" : "Istirahat panjang";
-
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Preset pomodoro">
-        {PRESETS.map((p) => (
+        {POMODORO_PRESETS.map((p) => (
           <button
             key={p.id}
             type="button"
@@ -146,9 +88,9 @@ function Pomodoro({ noteId }: { noteId: string }) {
               className="text-2xl font-semibold tabular-nums"
               role="timer"
               aria-live="off"
-              aria-label={`${phaseLabel}, sisa ${mm} menit ${ss} detik`}
+              aria-label={`${phaseLabel}, sisa ${mmss}`}
             >
-              {mm}:{ss}
+              {mmss}
             </div>
           </div>
         </div>
@@ -157,27 +99,24 @@ function Pomodoro({ noteId }: { noteId: string }) {
           <div>
             <div className="text-sm font-medium">{phaseLabel}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Kerjakan satu tugas kecil tanpa gangguan. Setelah 4 sesi fokus, ambil istirahat panjang.
+              Timer ini terus berjalan walau kamu pindah ke tab Preview, Edit, atau Latihan — bahkan
+              setelah halaman dimuat ulang.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-            <Button onClick={() => setRunning((v) => !v)} className="gap-1">
+            <Button onClick={toggle} className="gap-1">
               {running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               {running ? "Jeda" : "Mulai"}
             </Button>
             <Button variant="secondary" onClick={() => reset()} className="gap-1">
               <RotateCcw className="w-4 h-4" /> Ulang
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => reset(phase === "focus" ? "short" : "focus")}
-              className="gap-1"
-            >
+            <Button variant="ghost" onClick={switchPhase} className="gap-1">
               <Repeat className="w-4 h-4" /> Ganti sesi
             </Button>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center sm:justify-start">
-            <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> {done} sesi fokus selesai untuk catatan ini
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> {done} sesi fokus selesai
           </div>
         </div>
       </div>
