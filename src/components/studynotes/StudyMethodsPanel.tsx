@@ -368,7 +368,7 @@ function Cornell({ content, onAppend }: { content: string; onAppend?: (md: strin
 
 /* ------------------------------ Panel ------------------------------ */
 
-export function StudyMethodsPanel({ content, noteId, onAppend }: Props) {
+export function StudyMethodsPanel({ content, onAppend }: Props) {
   const [tab, setTab] = useState("pomodoro");
   const topRef = useRef<HTMLDivElement>(null);
 
