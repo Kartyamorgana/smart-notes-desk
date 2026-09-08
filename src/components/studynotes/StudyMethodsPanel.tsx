@@ -400,7 +400,7 @@ export function StudyMethodsPanel({ content, noteId, onAppend }: Props) {
         </TabsList>
 
         <TabsContent value="pomodoro" className="mt-4 rounded-xl border border-border p-4 sm:p-5">
-          <Pomodoro noteId={noteId} />
+          <Pomodoro />
         </TabsContent>
         <TabsContent value="blurting" className="mt-4 rounded-xl border border-border p-4 sm:p-5">
           <Blurting content={content} onAppend={onAppend} />
