@@ -176,7 +176,7 @@ export const generateStemQuiz = createServerFn({ method: "POST" })
 
     const res = parseJson(stripFences(await chat(system, blocks)), QuizSchema);
     const questions = res.questions.filter(
-      (q) => q.type === "num" || (q.options.length >= 2 && q.options.includes(q.answer)),
+      (q) => q.type === "num" || ((q.options ?? []).length >= 2 && (q.options ?? []).includes(q.answer)),
     );
     if (!questions.length) throw new Error("AI tidak menghasilkan soal yang valid");
     return { questions: questions.slice(0, data.count) };
