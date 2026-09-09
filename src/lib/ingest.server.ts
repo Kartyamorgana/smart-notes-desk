@@ -7,9 +7,10 @@ function key() {
   return k;
 }
 
-type ContentBlock =
+export type ContentBlock =
   | { type: "text"; text: string }
-  | { type: "file"; file: { filename: string; file_data: string } };
+  | { type: "file"; file: { filename: string; file_data: string } }
+  | { type: "image_url"; image_url: { url: string } };
 
 export async function chat(system: string, blocks: ContentBlock[]) {
   const res = await fetch(`${GATEWAY}/chat/completions`, {
