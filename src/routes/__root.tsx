@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { PomodoroProvider } from "../lib/pomodoro";
+import { FloatingTimer } from "../components/studynotes/FloatingTimer";
 
 function NotFoundComponent() {
   return (
