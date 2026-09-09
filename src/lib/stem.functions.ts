@@ -64,16 +64,8 @@ function parseJson<T>(raw: string, schema: z.ZodType<T>): T {
 export const analyzeStemMaterial = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => AnalyzeInput.parse(d))
   .handler(async ({ data }) => {
-    const { chat, stripFences, type ContentBlockUnused } = await (async () => {
-      const mod = await import("./ingest.server");
-      return { ...mod, type: undefined } as unknown as {
-        chat: (typeof import("./ingest.server"))["chat"];
-        stripFences: (typeof import("./ingest.server"))["stripFences"];
-        type: undefined;
-        ContentBlockUnused: undefined;
-      };
-    })();
-    void ContentBlockUnused;
+    const { chat, stripFences } = await import("./ingest.server");
+
 
     const system = [
       "Kamu tutor STEM & SNBT yang menjelaskan materi hitungan (matematika, fisika, kimia, logika) dengan bahasa sederhana namun akurat.",
