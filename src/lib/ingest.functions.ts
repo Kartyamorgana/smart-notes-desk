@@ -364,6 +364,7 @@ export const expandNoteSection = createServerFn({ method: "POST" })
 
       "- JANGAN menulis ulang isi bagian lain (daftar bagian diberikan agar kamu tidak tumpang tindih).",
       "- Keluarkan HANYA Markdown bagian ini, tanpa pembuka/penutup meta dan tanpa code fence pembungkus.",
+      "- RUMUS (WAJIB): bungkus semua notasi matematika/kimia dengan `$...$` (inline) atau `$$...$$` (blok). Jangan menulis \\frac, \\sqrt, \\sum, subskrip/superskrip di luar pembatas math, dan jangan menaruh rumus di code block.",
       "Gunakan bahasa yang sama dengan materi (default Bahasa Indonesia).",
     ].join("\n");
 
