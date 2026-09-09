@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { PomodoroProvider } from "../lib/pomodoro";
+import { FloatingTimer } from "../components/studynotes/FloatingTimer";
 
 function NotFoundComponent() {
   return (
@@ -122,8 +124,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <PomodoroProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <FloatingTimer />
+      </PomodoroProvider>
     </QueryClientProvider>
   );
 }
