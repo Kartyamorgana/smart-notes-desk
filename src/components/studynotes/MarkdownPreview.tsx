@@ -90,15 +90,50 @@ const SYMBOLS: Record<string, string> = {
   Omega: "Ω",
 };
 
+/** Perintah LaTeX yang hampir selalu butuh mode matematika. */
+const MATHY =
+  /^(frac|dfrac|tfrac|sqrt|sum|prod|int|iint|oint|lim|binom|vec|hat|bar|tilde|overline|underline|overrightarrow|mathrm|mathbf|mathbb|mathcal|operatorname|log|ln|exp|sin|cos|tan|sec|csc|cot|partial|nabla|cdots|ldots|dots|begin|end|left|right|substack|matrix|pmatrix|bmatrix|cases|align|aligned|text)$/;
+
 /** Normalisasi notasi LaTeX agar konsisten dipakai remark-math. */
 export function normalizeMath(src: string): string {
   let out = src;
   // \[ ... \] -> $$ ... $$ ; \( ... \) -> $ ... $
   out = out.replace(/\\\[([\s\S]*?)\\\]/g, (_m, inner) => `\n$$\n${String(inner).trim()}\n$$\n`);
   out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_m, inner) => `$${String(inner).trim()}$`);
+  const protect = (s: string) => s.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|`[^`]*`|```[\s\S]*?```)/g);
+
+  // \begin{env} ... \end{env} di luar math -> blok $$
+  out = protect(out)
+    .map((seg, i) =>
+      i % 2 === 1
+        ? seg
+        : seg.replace(
+            /\\begin\{(equation\*?|align\*?|aligned|gather\*?|cases|array|[pbvB]?matrix)\}([\s\S]*?)\\end\{\1\}/g,
+            (_m, env: string, body: string) =>
+              env.startsWith("equation")
+                ? `\n$$\n${body.trim()}\n$$\n`
+                : `\n$$\n\\begin{${env}}${body}\\end{${env}}\n$$\n`,
+          ),
+    )
+    .join("");
+
+  // Perintah bermakna matematika + argumen/sub-superskrip yang lupa dibungkus $
+  out = protect(out)
+    .map((seg, i) => {
+      if (i % 2 === 1) return seg;
+      return seg.replace(
+        /\\[A-Za-z]+(?:\s*(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\[[^\]\n]*\]|[_^]\{[^{}]*\}|[_^][A-Za-z0-9]))+/g,
+        (m) => {
+          const name = /^\\([A-Za-z]+)/.exec(m)?.[1] ?? "";
+          if (!MATHY.test(name)) return m;
+          return `$${m.trim()}$`;
+        },
+      );
+    })
+    .join("");
+
   // Perintah LaTeX yang berdiri sendiri di luar math -> simbol unicode
-  const segments = out.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|`[^`]*`|```[\s\S]*?```)/g);
-  return segments
+  return protect(out)
     .map((seg, i) => {
       if (i % 2 === 1) return seg;
       return seg.replace(/\\([A-Za-z]+)/g, (m, name: string) => SYMBOLS[name] ?? m);
