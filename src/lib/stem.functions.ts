@@ -181,3 +181,110 @@ export const generateStemQuiz = createServerFn({ method: "POST" })
     if (!questions.length) throw new Error("AI tidak menghasilkan soal yang valid");
     return { questions: questions.slice(0, data.count) };
   });
+
+  // ============================================================================
+// CHEAT SHEET — output ringkas, formula-first
+// ============================================================================
+
+const CheatSheetInput = z.object({
+  subject: z.enum(["umum", "kuantitatif", "matematika", "custom"]).default("custom"),
+  topic: z.string().max(400).optional(),
+  material: z.string().max(120000).optional(),
+});
+
+const CheatSheetSchema = z.object({
+  title: z.string().min(1),
+  sections: z
+    .array(
+      z.object({
+        heading: z.string().min(1),
+        brief: z.string().default(""),
+        formulas: z
+          .array(
+            z.object({
+              latex: z.string().min(1),
+              label: z.string().default(""),
+            }),
+          )
+          .default([]),
+        tips: z.array(z.string()).default([]),
+      }),
+    )
+    .min(1),
+  quickRefs: z
+    .array(
+      z.object({
+        term: z.string().min(1),
+        meaning: z.string().min(1),
+      }),
+    )
+    .default([]),
+});
+
+export type StemCheatSheetData = z.infer<typeof CheatSheetSchema>;
+
+export const generateStemCheatSheet = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => CheatSheetInput.parse(d))
+  .handler(async ({ data }) => {
+    const { chat, stripFences } = await import("./ingest.server");
+
+    const system = [
+      "Kamu editor cheat-sheet STEM untuk belajar cepat. Gaya: padat, formula-first, mudah dipindai.",
+      "FOKUS: pemahaman KUANTITATIF. Utamakan rumus, kondisi pakai, dan trik. Hindari esai dan basa-basi.",
+      `Bidang: ${SUBJECT_BRIEF[data.subject]}`,
+      'Balas HANYA JSON valid tanpa code fence: {"title":string,"sections":[{"heading":string,"brief":string,"formulas":[{"latex":string,"label":string}],"tips":[string]}],"quickRefs":[{"term":string,"meaning":string}]}',
+      "Aturan isi:",
+      "- title: maks 80 karakter, ringkas, jelas topiknya.",
+      "- sections: 3-8 bagian per konsep besar. heading maks 6 kata (mis. \"Perbandingan Senilai\").",
+      "- brief: 1-2 kalimat penjelasan inti, maks 30 kata. Langsung ke poin.",
+      "- formulas: 1-5 rumus inti per section. `latex` HANYA isi LaTeX tanpa pembatas $ (mis. `v = \\\\frac{s}{t}`). `label`: nama singkat atau kapan rumus dipakai (maks 8 kata).",
+      "- tips: 2-4 poin singkat (maks 20 kata/poin). Berisi trik menghafal, jebakan umum, atau cara cek cepat. Boleh kosong bila tidak relevan.",
+      "- quickRefs: 4-10 glosarium mini. term: nama istilah. meaning: arti singkat maks 15 kata.",
+      "Aturan matematika: setiap notasi matematika/kimia di `brief`, `tips`, `label`, `meaning` dibungkus pembatas math — inline `$...$`. Jangan menulis perintah LaTeX (\\\\frac, \\\\sqrt, dst) di luar pembatas math.",
+      "Gunakan Bahasa Indonesia.",
+    ].join("\n");
+
+    const blocks: { type: "text"; text: string }[] = [];
+    if (data.topic?.trim()) blocks.push({ type: "text", text: `Topik: ${data.topic}` });
+    if (data.material?.trim())
+      blocks.push({
+        type: "text",
+        text: `=== MATERI ACUAN ===\n${data.material.slice(0, 120000)}`,
+      });
+    if (!blocks.length) throw new Error("Tidak ada topik atau materi untuk membuat cheat sheet");
+
+    const raw = stripFences(await chat(system, blocks));
+    try {
+      return CheatSheetSchema.parse(JSON.parse(raw));
+    } catch {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error("Format hasil AI tidak valid");
+      return CheatSheetSchema.parse(JSON.parse(m[0]));
+    }
+  });
+
+/** Konversi hasil cheat sheet ke Markdown rapi — dipakai untuk save-note & copy. */
+export function cheatSheetToMarkdown(cs: StemCheatSheetData): string {
+  const lines: string[] = [`# ${cs.title}`, ""];
+  for (const s of cs.sections) {
+    lines.push(`## ${s.heading}`);
+    if (s.brief) lines.push("", s.brief);
+    if (s.formulas.length) {
+      lines.push("", "**Rumus:**");
+      for (const f of s.formulas) {
+        lines.push(`- $${f.latex}$${f.label ? ` — ${f.label}` : ""}`);
+      }
+    }
+    if (s.tips.length) {
+      lines.push("", "**Tips:**");
+      for (const t of s.tips) lines.push(`- ${t}`);
+    }
+    lines.push("");
+  }
+  if (cs.quickRefs.length) {
+    lines.push("## 📖 Glosarium", "");
+    for (const q of cs.quickRefs) lines.push(`- **${q.term}** — ${q.meaning}`);
+    lines.push("");
+  }
+  return lines.join("\n").trimEnd();
+}
