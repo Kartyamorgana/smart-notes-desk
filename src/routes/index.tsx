@@ -76,6 +76,7 @@ import { MaterialImportDialog } from "@/components/studynotes/MaterialImportDial
 import { StudyGamePanel } from "@/components/studynotes/StudyGamePanel";
 import { StudyMethodsPanel } from "@/components/studynotes/StudyMethodsPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { StemTopNav } from "@/components/stem/StemTopNav";
 
 type View = "edit" | "preview" | "game" | "methods";
 
@@ -425,7 +426,7 @@ function StudyNotesApp() {
   }, [flushSave]);
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground">
+    <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
       <a
         href="#note-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-primary focus:text-primary-foreground focus:px-3 focus:py-1.5 focus:rounded-md focus:text-sm"
@@ -454,7 +455,8 @@ function StudyNotesApp() {
         }`}
       >
         <div className="p-3 border-b border-sidebar-border">
-          <div className="flex items-center gap-2 mb-3">
+            <StemTopNav size="comfortable" className="mb-3" />
+            <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground grid place-items-center">
               <BookOpen className="w-4 h-4" />
             </div>

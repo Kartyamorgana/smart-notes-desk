@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import {
   Loader2,
   Lightbulb,
-  Calculator,
   Timer,
   ChevronLeft,
   ChevronRight,
@@ -13,8 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { MarkdownPreview } from "@/components/studynotes/MarkdownPreview";
+import { ScratchpadDrawer } from "./ScratchpadDrawer";
 import {
   generateStemQuiz,
   SUBJECTS,
@@ -68,8 +67,6 @@ export function StemPractice({
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
   const [hintLevel, setHintLevel] = useState<Record<number, number>>({});
-  const [scratch, setScratch] = useState("");
-  const [scratchOpen, setScratchOpen] = useState(false);
   const [left, setLeft] = useState(0);
   const [finished, setFinished] = useState(false);
   const startedAt = useRef(0);
@@ -94,7 +91,10 @@ export function StemPractice({
 
   const score = useMemo(() => {
     if (!questions) return 0;
-    return questions.reduce((acc, q, i) => acc + (isCorrect(q, answers[i] ?? "") ? 1 : 0), 0);
+    return questions.reduce(
+      (acc, q, i) => acc + (isCorrect(q, answers[i] ?? "") ? 1 : 0),
+      0,
+    );
   }, [questions, answers]);
 
   const run = async () => {
@@ -120,7 +120,6 @@ export function StemPractice({
       setRevealed({});
       setHintLevel({});
       setFinished(false);
-      setScratch("");
       setLeft(minutes * 60);
       startedAt.current = Date.now();
       setElapsed(0);
@@ -158,8 +157,11 @@ export function StemPractice({
             ))}
           </div>
         </div>
+
         <div>
-          <div className="text-xs font-medium text-muted-foreground mb-1.5">Tingkat kesulitan</div>
+          <div className="text-xs font-medium text-muted-foreground mb-1.5">
+            Tingkat kesulitan
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {DIFFS.map((d) => (
               <button
@@ -178,12 +180,15 @@ export function StemPractice({
             ))}
           </div>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setExam(false)}
             aria-pressed={!exam}
-            className={`rounded-lg border px-3 py-2 text-xs font-medium ${!exam ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-accent"}`}
+            className={`rounded-lg border px-3 py-2 text-xs font-medium ${
+              !exam ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-accent"
+            }`}
           >
             Mode Santai (ada petunjuk)
           </button>
@@ -191,7 +196,9 @@ export function StemPractice({
             type="button"
             onClick={() => setExam(true)}
             aria-pressed={exam}
-            className={`rounded-lg border px-3 py-2 text-xs font-medium ${exam ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-accent"}`}
+            className={`rounded-lg border px-3 py-2 text-xs font-medium ${
+              exam ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-accent"
+            }`}
           >
             Mode Ujian (berwaktu)
           </button>
@@ -210,11 +217,15 @@ export function StemPractice({
             </label>
           )}
         </div>
+
         <Input
           value={ownTopic}
           onChange={(e) => setOwnTopic(e.target.value)}
-          placeholder={`Topik soal (opsional) — bidang: ${SUBJECTS.find((s) => s.id === subject)?.label ?? ""}`}
+          placeholder={`Topik soal (opsional) — bidang: ${
+            SUBJECTS.find((s) => s.id === subject)?.label ?? ""
+          }`}
         />
+
         <Button onClick={run} disabled={busy} className="w-full gap-1.5">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
           {busy ? "Menyusun soal…" : "Mulai latihan"}
@@ -235,13 +246,16 @@ export function StemPractice({
             Skor {Math.round((score / questions.length) * 100)} · waktu {mmss(elapsed)}
           </div>
         </div>
+
         <div className="space-y-3">
           {questions.map((q, i) => {
             const ok = isCorrect(q, answers[i] ?? "");
             return (
               <details key={i} className="rounded-xl border border-border p-3">
                 <summary className="cursor-pointer text-sm font-medium">
-                  <span className={ok ? "text-primary" : "text-destructive"}>{ok ? "✓" : "✗"}</span>{" "}
+                  <span className={ok ? "text-primary" : "text-destructive"}>
+                    {ok ? "✓" : "✗"}
+                  </span>{" "}
                   Soal {i + 1} {q.topic ? `· ${q.topic}` : ""}
                 </summary>
                 <div className="mt-2">
@@ -257,6 +271,7 @@ export function StemPractice({
             );
           })}
         </div>
+
         <Button variant="secondary" className="w-full gap-1.5" onClick={() => setQuestions(null)}>
           <RotateCcw className="w-4 h-4" /> Latihan lagi
         </Button>
@@ -281,7 +296,12 @@ export function StemPractice({
             <Timer className="w-3.5 h-3.5" />
             {exam ? mmss(left) : mmss(elapsed)}
           </span>
-          <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={() => setFinished(true)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-7 text-xs"
+            onClick={() => setFinished(true)}
+          >
             Selesai
           </Button>
         </div>
@@ -333,17 +353,16 @@ export function StemPractice({
               onClick={() => setHintLevel((h) => ({ ...h, [idx]: shown + 1 }))}
             >
               <Lightbulb className="w-3.5 h-3.5" />
-              {shown === 0 ? "Butuh Petunjuk?" : shown >= hints.length ? "Petunjuk habis" : "Petunjuk lagi"}
+              {shown === 0
+                ? "Butuh Petunjuk?"
+                : shown >= hints.length
+                  ? "Petunjuk habis"
+                  : "Petunjuk lagi"}
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-8 text-xs gap-1"
-            onClick={() => setScratchOpen((v) => !v)}
-          >
-            <Calculator className="w-3.5 h-3.5" /> Papan hitung
-          </Button>
+
+          <ScratchpadDrawer />
+
           {!exam && (
             <Button
               size="sm"
@@ -364,15 +383,6 @@ export function StemPractice({
               </li>
             ))}
           </ol>
-        )}
-
-        {scratchOpen && (
-          <Textarea
-            value={scratch}
-            onChange={(e) => setScratch(e.target.value)}
-            placeholder="Papan hitung — tulis langkah kerjamu di sini"
-            className="mt-3 min-h-[120px] font-mono text-xs"
-          />
         )}
 
         {!exam && revealed[idx] && (

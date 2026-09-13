@@ -51,7 +51,7 @@ const AnalyzeSchema = z.object({
 
 export type StemAnalysis = z.infer<typeof AnalyzeSchema>;
 
-function parseJson<T>(raw: string, schema: z.ZodType<T>): T {
+function parseJson<T>(raw: string, schema: z.ZodType<T, z.ZodTypeDef, unknown>): T {
   try {
     return schema.parse(JSON.parse(raw));
   } catch {
