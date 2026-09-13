@@ -23,13 +23,21 @@ import {
   type SubjectId,
 } from "@/lib/stem.functions";
 
+/**
+ * Utilitas: matikan margin atas/bawah paragraf pertama & terakhir di dalam
+ * MarkdownPreview, supaya bisa disisipkan inline tanpa bikin layout berantakan.
+ * `[&_.prose-note>*:first-child]` → `.parent .prose-note > *:first-child`.
+ */
+const INLINE_MD =
+  "[&_.prose-note>*:first-child]:mt-0 [&_.prose-note>*:last-child]:mb-0";
+
 function CopyFormulaButton({ latex }: { latex: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
       aria-label="Salin rumus"
-      className="text-muted-foreground hover:text-foreground transition-colors"
+      className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
       onClick={() => {
         navigator.clipboard.writeText(`$${latex}$`);
         setCopied(true);
@@ -38,6 +46,24 @@ function CopyFormulaButton({ latex }: { latex: string }) {
     >
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
     </button>
+  );
+}
+
+/** Satu baris glosarium: istilah (kiri) + arti (kanan) dengan layout grid yang rapi. */
+function GlossaryItem({ term, meaning }: { term: string; meaning: string }) {
+  return (
+    <div className="py-2 border-b border-border/50 last:border-0">
+      <dt
+        className={`text-[13px] font-semibold text-foreground leading-snug ${INLINE_MD}`}
+      >
+        <MarkdownPreview source={term} />
+      </dt>
+      <dd
+        className={`mt-0.5 text-xs text-muted-foreground leading-snug ${INLINE_MD}`}
+      >
+        <MarkdownPreview source={meaning} />
+      </dd>
+    </div>
   );
 }
 
@@ -176,13 +202,12 @@ export function StemCheatSheet({
           </div>
 
           <div className="flex flex-wrap gap-1.5 shrink-0">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="h-8 text-xs gap-1"
-              onClick={copyAll}
-            >
-              {copiedAll ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            <Button size="sm" variant="secondary" className="h-8 text-xs gap-1" onClick={copyAll}>
+              {copiedAll ? (
+                <ClipboardCheck className="w-3.5 h-3.5" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
               {copiedAll ? "Tersalin" : "Salin MD"}
             </Button>
             <Button
@@ -235,7 +260,7 @@ export function StemCheatSheet({
 
             <div className="p-4 space-y-3">
               {s.brief && (
-                <div className="text-sm text-foreground/90 leading-relaxed">
+                <div className={`text-sm text-foreground/90 ${INLINE_MD}`}>
                   <MarkdownPreview source={s.brief} />
                 </div>
               )}
@@ -252,7 +277,9 @@ export function StemCheatSheet({
                         className="group rounded-xl border border-border bg-background p-2.5 transition-colors hover:border-primary/50"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 overflow-x-auto text-[15px] flex-1">
+                          <div
+                            className={`min-w-0 overflow-x-auto text-[15px] flex-1 ${INLINE_MD}`}
+                          >
                             <MarkdownPreview source={`$$${f.latex}$$`} />
                           </div>
                           <CopyFormulaButton latex={f.latex} />
@@ -273,11 +300,13 @@ export function StemCheatSheet({
                   <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
                     Tips &amp; Jebakan
                   </div>
-                  <ul className="space-y-1 text-sm">
+                  <ul className="space-y-1.5 text-sm leading-relaxed">
                     {s.tips.map((t, j) => (
-                      <li key={j} className="flex gap-2 text-foreground/90">
-                        <span className="text-primary mt-0.5 shrink-0">•</span>
-                        <div className="min-w-0">
+                      <li key={j} className="grid grid-cols-[auto_1fr] gap-2 leading-relaxed">
+                        <span className="text-primary select-none" aria-hidden="true">
+                          •
+                        </span>
+                        <div className={`min-w-0 ${INLINE_MD}`}>
                           <MarkdownPreview source={t} />
                         </div>
                       </li>
@@ -293,17 +322,10 @@ export function StemCheatSheet({
       {/* Glosarium */}
       {result.quickRefs.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="text-sm font-semibold mb-3 flex items-center gap-2">
-            📖 Glosarium
-          </div>
-          <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+          <div className="text-sm font-semibold mb-3 flex items-center gap-2">📖 Glosarium</div>
+          <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
             {result.quickRefs.map((q, i) => (
-              <div key={i} className="flex flex-col gap-0.5 py-1 border-b border-border/50 last:border-0">
-                <dt className="text-[13px] font-semibold text-foreground">{q.term}</dt>
-                <dd className="text-xs text-muted-foreground leading-snug">
-                  <MarkdownPreview source={q.meaning} />
-                </dd>
-              </div>
+              <GlossaryItem key={i} term={q.term} meaning={q.meaning} />
             ))}
           </dl>
         </div>
