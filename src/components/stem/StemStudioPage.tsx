@@ -5,11 +5,16 @@ import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTheme } from "@/hooks/use-theme";
 import { createNote, updateNote } from "@/lib/db";
+import { saveStemAnalysis, saveStemCheatSheet } from "@/lib/stem-history";
 import { StemTopNav } from "./StemTopNav";
 import { StemAnalyzer } from "./StemAnalyzer";
 import { StemPractice } from "./StemPractice";
 import { StemCheatSheet } from "./StemCheatSheet";
-import type { StemAnalysis, SubjectId } from "@/lib/stem.functions";
+import type {
+  StemAnalysis,
+  StemCheatSheetData,
+  SubjectId,
+} from "@/lib/stem.functions";
 
 type StemTab = "analyzer" | "cheatsheet" | "practice";
 
@@ -19,7 +24,6 @@ export function StemStudioPage() {
   const [analysis, setAnalysis] = useState<StemAnalysis | null>(null);
   const [tab, setTab] = useState<StemTab>("analyzer");
 
-  // Materi acuan (dipakai Cheat Sheet & Practice)
   const material = analysis
     ? [analysis.overview, analysis.concepts, analysis.formulas, analysis.pitfalls]
         .filter((s) => s && s.trim().length > 0)
@@ -35,6 +39,35 @@ export function StemStudioPage() {
       toast.error("Gagal menyimpan catatan", { description: (e as Error).message });
     }
   }, []);
+
+  const handleAnalyzed = useCallback(
+    async (a: StemAnalysis) => {
+      setAnalysis(a);
+      setTab("cheatsheet");
+      // Simpan histori tanpa memblokir UI
+      saveStemAnalysis({
+        subject,
+        topic: a.title,
+        analysis: a,
+      }).catch((e) => {
+        console.warn("Gagal simpan histori analisis:", e);
+      });
+    },
+    [subject],
+  );
+
+  const handleCheatSheetSaved = useCallback(
+    async (cs: StemCheatSheetData) => {
+      saveStemCheatSheet({
+        subject,
+        topic: cs.title,
+        cheatSheet: cs,
+      }).catch((e) => {
+        console.warn("Gagal simpan histori cheat sheet:", e);
+      });
+    },
+    [subject],
+  );
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
@@ -85,10 +118,7 @@ export function StemStudioPage() {
               <StemAnalyzer
                 subject={subject}
                 onSubjectChange={setSubject}
-                onResult={(a) => {
-                  setAnalysis(a);
-                  setTab("cheatsheet");
-                }}
+                onResult={handleAnalyzed}
                 onSaveNote={saveAsNote}
               />
             </TabsContent>
@@ -99,6 +129,7 @@ export function StemStudioPage() {
                 topic={analysis?.title}
                 material={material}
                 onSaveNote={saveAsNote}
+                onGenerated={handleCheatSheetSaved}
               />
             </TabsContent>
 

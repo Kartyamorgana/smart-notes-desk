@@ -149,7 +149,7 @@ export function StemAnalyzer({
           value={material}
           onChange={(e) => setMaterial(e.target.value)}
           placeholder="Tempel materi/teks di sini (opsional)"
-          className="min-h-[96px] font-mono text-xs"
+          className="min-h-24 font-mono text-xs"
         />
 
         <div className="flex flex-wrap items-center gap-2">

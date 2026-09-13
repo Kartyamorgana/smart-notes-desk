@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -13,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { PomodoroProvider } from "../lib/pomodoro";
 import { FloatingTimer } from "../components/studynotes/FloatingTimer";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 function NotFoundComponent() {
   return (
@@ -36,11 +38,14 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    reportLovableError(
+      error instanceof Error ? error : new Error(String(error)),
+      { boundary: "tanstack_root_error_component" },
+    );
   }, [error]);
 
   return (
@@ -92,12 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/73cfa90d-08b4-4ff1-bdcb-9a3241e215d1/id-preview-0289f474--97d049ab-9fb6-4b24-8f05-547b7fba5bd5.lovable.app-1781160218385.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/73cfa90d-08b4-4ff1-bdcb-9a3241e215d1/id-preview-0289f474--97d049ab-9fb6-4b24-8f05-547b7fba5bd5.lovable.app-1781160218385.png" },
     ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-    ],
+    links: [{ rel: "stylesheet", href: appCss }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -107,11 +107,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
         <Scripts />
       </body>
@@ -124,11 +124,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <PomodoroProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <FloatingTimer />
-      </PomodoroProvider>
+      <AuthProvider>
+        <PomodoroProvider>
+          <Outlet />
+          <FloatingTimer />
+        </PomodoroProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

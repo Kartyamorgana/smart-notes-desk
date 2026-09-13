@@ -72,11 +72,13 @@ export function StemCheatSheet({
   material,
   topic,
   onSaveNote,
+  onGenerated,
 }: {
   subject: SubjectId;
   material?: string;
   topic?: string;
   onSaveNote: (title: string, markdown: string) => void;
+  onGenerated?: (cs: StemCheatSheetData) => void;
 }) {
   const gen = useServerFn(generateStemCheatSheet);
   const [ownTopic, setOwnTopic] = useState("");
@@ -102,6 +104,7 @@ export function StemCheatSheet({
       });
       setResult(res);
       setQuery("");
+      onGenerated?.(res);
       toast.success("Cheat sheet siap");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Gagal membuat cheat sheet");

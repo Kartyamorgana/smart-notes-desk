@@ -77,6 +77,9 @@ import { StudyGamePanel } from "@/components/studynotes/StudyGamePanel";
 import { StudyMethodsPanel } from "@/components/studynotes/StudyMethodsPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { StemTopNav } from "@/components/stem/StemTopNav";
+import { useRequireAuth } from "@/hooks/use-require-auth";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { Loader2 as Loader2Icon } from "lucide-react"; // Loader2 mungkin sudah diimpor
 
 type View = "edit" | "preview" | "game" | "methods";
 
@@ -94,8 +97,22 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Catatan belajar interaktif dengan AI." },
     ],
   }),
-  component: StudyNotesApp,
+  component: StudyNotesRoute,
 });
+
+function StudyNotesRoute() {
+  const { loading } = useRequireAuth();
+
+  if (loading) {
+    return (
+      <div className="h-dvh grid place-items-center bg-background">
+        <Loader2Icon className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return <StudyNotesApp />;
+}
 
 function StudyNotesApp() {
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -331,47 +348,59 @@ function StudyNotesApp() {
     setImportMode("merge");
   };
   const runImport = async () => {
-    if (!importFile || !importMode) return;
-    try {
-      const text = await importFile.text();
-      const data = JSON.parse(text) as { folders?: Folder[]; notes?: Note[] };
-      if (importMode === "replace") {
-        await supabase.from("notes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        await supabase.from("folders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      }
-      if (data.folders?.length) {
-        await supabase.from("folders").insert(
-          data.folders.map((f) => ({
-            id: f.id,
-            name: f.name,
-            parent_id: f.parent_id,
-          }))
-        );
-      }
-      if (data.notes?.length) {
-        await supabase.from("notes").insert(
-          data.notes.map((n) => ({
-            id: n.id,
-            title: n.title,
-            content: n.content,
-            folder_id: n.folder_id,
-            pinned: n.pinned ?? false,
-            tags: n.tags ?? [],
-          }))
-        );
-      }
-      const fresh = await fetchAll();
-      setFolders(fresh.folders);
-      setNotes(fresh.notes);
-      toast.success("Impor selesai");
-    } catch (e) {
-      toast.error("Gagal mengimpor", { description: (e as Error).message });
-    } finally {
-      setImportFile(null);
-      setImportMode(null);
-      if (importFileRef.current) importFileRef.current.value = "";
+  if (!importFile || !importMode) return;
+  try {
+    // Ambil user_id dari sesi aktif — RLS akan menolak insert tanpa ini.
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr) throw userErr;
+    const userId = userData.user?.id;
+    if (!userId) throw new Error("Sesi tidak valid, silakan login ulang");
+
+    const text = await importFile.text();
+    const data = JSON.parse(text) as { folders?: Folder[]; notes?: Note[] };
+
+    if (importMode === "replace") {
+      await supabase.from("notes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("folders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     }
-  };
+
+    if (data.folders?.length) {
+      await supabase.from("folders").insert(
+        data.folders.map((f) => ({
+          id: f.id,
+          name: f.name,
+          parent_id: f.parent_id,
+          user_id: userId,
+        }))
+      );
+    }
+
+    if (data.notes?.length) {
+      await supabase.from("notes").insert(
+        data.notes.map((n) => ({
+          id: n.id,
+          title: n.title,
+          content: n.content,
+          folder_id: n.folder_id,
+          pinned: n.pinned ?? false,
+          tags: n.tags ?? [],
+          user_id: userId,
+        }))
+      );
+    }
+
+    const fresh = await fetchAll();
+    setFolders(fresh.folders);
+    setNotes(fresh.notes);
+    toast.success("Impor selesai");
+  } catch (e) {
+    toast.error("Gagal mengimpor", { description: (e as Error).message });
+  } finally {
+    setImportFile(null);
+    setImportMode(null);
+    if (importFileRef.current) importFileRef.current.value = "";
+  }
+};
 
   // AI
   const [aiLoading, setAiLoading] = useState<"refine" | "summarize" | null>(null);
@@ -471,6 +500,7 @@ function StudyNotesApp() {
             >
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            <UserMenu />
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
